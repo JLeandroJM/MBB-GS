@@ -1,0 +1,7 @@
+python scripts\train.py --config configs\config_pelotas_cheby_FUNCIONAL2.json
+
+PARA EL CUDA:
+set DISTUTILS_USE_SDK=1
+set MSSdk=1
+
+python setup.py build_ext --inplace

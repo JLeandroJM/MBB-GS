@@ -1,0 +1,82 @@
+{
+  "nombre_experimento": "exp09_gojo_cuda_mejorado",
+  "base": "chebyshev",
+
+  "video_mp4": null,
+  "clip": "gojo",
+
+  "n_gaussianas_inicial": 20000,
+
+  "grados": {
+    "mu": 0,
+    "opacity": 0,
+    "color": 0,
+    "scale": 0,
+    "theta": 0,
+    "depth": 0
+  },
+
+  "lrs": {
+    "mu_a0": 0.001,
+    "mu_high": 0.0,
+
+    "opacity_a0": 0.05,
+    "opacity_high": 0.0,
+
+    "color_a0": 0.01,
+    "color_high": 0.0,
+
+    "scale_a0": 0.005,
+    "scale_high": 0.0,
+
+    "theta_a0": 0.005,
+    "theta_high": 0.0,
+
+    "depth_a0": 0.001,
+    "depth_high": 0.0
+  },
+
+  "n_epochs": 1500,
+
+  "beta_smoothness": 0.0,
+  "pesos_smoothness": {
+    "mu": 0.0,
+    "opacity": 0.0,
+    "color": 0.0,
+    "scale": 0.0,
+    "theta": 0.0,
+    "depth": 0.0
+  },
+
+  "umbral_pruning_post": 0.01,
+  "checkpoint_cada_n_epochs": 100,
+  "sub_batch_frames": 1,
+  "lambda_dssim": 0.05,
+  "escala_inicial_px": 2.0,
+
+  "max_frames": 1,
+
+  "device": "cuda",
+  "seed": 42,
+
+  "usar_cuda_conic": false,
+  "usar_cuda_tiled": true,
+  "cuda_tile_size": 16,
+  "cuda_k_sigma": 4.0,
+
+  "calcular_psnr_durante_training": false,
+  "inicializar_color_desde_frame0": true,
+  "guardar_checkpoints_intermedios": false,
+  "guardar_verificacion_visual": false,
+
+  "calcular_metricas": true,
+  "usar_ssim": true,
+  "usar_lpips": false,
+
+  "ejecutar_pruning_post": true,
+  "calcular_compresion": false,
+  "guardar_visualizaciones": false,
+  "guardar_gif": false,
+  "guardar_frames_rasterizados": true,
+  "calidades_avif": []
+}

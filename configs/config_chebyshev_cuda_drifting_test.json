@@ -1,0 +1,90 @@
+{
+  "nombre_experimento": "exp09_chebyshev_cuda_drifting_IGNORAR",
+  "base": "chebyshev",
+
+  "video_mp4": null,
+  "n_frames_extraer": null,
+  "fps_extraccion": null,
+  "resolucion_extraccion": [256, 256],
+  "forzar_extraccion": false,
+
+  "clip": "drifting_circles",
+
+  "n_gaussianas_inicial": 15000,
+
+  "grados": {
+    "mu": 30,
+    "opacity": 30,
+    "color": 16,
+    "scale": 12,
+    "theta": 8,
+    "depth": 8
+  },
+
+  "lrs": {
+    "mu_a0": 0.001,
+    "mu_high": 0.0005,
+
+    "opacity_a0": 0.05,
+    "opacity_high": 0.01,
+
+    "color_a0": 0.01,
+    "color_high": 0.003,
+
+    "scale_a0": 0.005,
+    "scale_high": 0.0005,
+
+    "theta_a0": 0.005,
+    "theta_high": 0.0005,
+
+    "depth_a0": 0.001,
+    "depth_high": 0.0001
+  },
+
+  "n_epochs": 50,
+
+  "beta_smoothness": 0.000001,
+
+  "pesos_smoothness": {
+    "mu": 1.0,
+    "opacity": 0.5,
+    "color": 1.0,
+    "scale": 2.0,
+    "theta": 2.0,
+    "depth": 2.0
+  },
+
+  "umbral_pruning_post": 0.03,
+  "checkpoint_cada_n_epochs": 100,
+  "sub_batch_frames": 1,
+  "lambda_dssim": 0.05,
+  "escala_inicial_px": 4.0,
+
+  "max_frames": null,
+
+  "calidades_avif": [],
+
+  "device": "cuda",
+  "seed": 42,
+
+  "usar_cuda_conic": false,
+  "usar_cuda_tiled": true,
+  "cuda_tile_size": 16,
+  "cuda_k_sigma": 5.0,
+
+  "calcular_psnr_durante_training": false,
+  "inicializar_color_desde_frame0": true,
+  "guardar_checkpoints_intermedios": false,
+  "guardar_verificacion_visual": false,
+
+  "calcular_metricas": true,
+  "usar_ssim": false,
+  "usar_lpips": false,
+
+  "ejecutar_pruning_post": true,
+  "calcular_compresion": false,
+  "guardar_visualizaciones": false,
+  "guardar_gif": true,
+  "guardar_frames_rasterizados": true
+  
+}

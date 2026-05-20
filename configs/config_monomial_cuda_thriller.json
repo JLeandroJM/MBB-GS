@@ -1,0 +1,74 @@
+{
+  "nombre_experimento": "exp09_monomial_cuda_thriller_N1000",
+  "base": "monomial",
+
+  "video_mp4": null,
+  "n_frames_extraer": null,
+  "fps_extraccion": null,
+  "resolucion_extraccion": [256, 256],
+  "forzar_extraccion": false,
+  "inicializar_color_desde_frame0": false,
+  "clip": "thriller_clips",
+
+  "n_gaussianas_inicial": 1000,
+
+  "grados": {
+    "mu": 20,
+    "opacity": 20,
+    "color": 10,
+    "scale": 10,
+    "theta": 8,
+    "depth": 8
+    },
+
+  "lrs": {
+    "mu_a0": 0.001,
+    "mu_high": 0.0001,
+
+    "opacity_a0": 0.05,
+    "opacity_high": 0.005,
+
+    "color_a0": 0.01,
+    "color_high": 0.001,
+
+    "scale_a0": 0.005,
+    "scale_high": 0.0005,
+
+    "theta_a0": 0.005,
+    "theta_high": 0.0005,
+
+    "depth_a0": 0.005,
+    "depth_high": 0.0005
+  },
+
+  "n_epochs": 50,
+
+  "beta_smoothness": 0.00001,
+
+  "pesos_smoothness": {
+    "mu": 1.0,
+    "opacity": 0.5,
+    "color": 2.0,
+    "scale": 2.0,
+    "theta": 2.0,
+    "depth": 2.0
+  },
+
+  "umbral_pruning_post": 0.05,
+  "checkpoint_cada_n_epochs": 50,
+  "sub_batch_frames": 1,
+  "lambda_dssim": 0.2,
+  "escala_inicial_px": 5.0,
+
+  "max_frames": null,
+
+  "calidades_avif": [80, 95],
+
+  "device": "cuda",
+  "seed": 43,
+
+  "usar_cuda_conic": false,
+  "usar_cuda_tiled": true,
+  "cuda_tile_size": 16,
+  "cuda_k_sigma": 4
+}

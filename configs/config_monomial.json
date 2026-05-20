@@ -1,0 +1,48 @@
+{
+    "nombre_experimento": "exp09_monomial",
+    "base": "monomial",
+
+    "video_mp4": null,
+    "n_frames_extraer": null,
+    "fps_extraccion": null,
+    "resolucion_extraccion": [256, 256],
+    "forzar_extraccion": false,
+
+    "clip": "drifting_circles",
+    "n_gaussianas_inicial": 1000,
+    "grados": {
+        "mu": 40,
+        "opacity": 40,
+        "color": 20,
+        "scale": 20,
+        "theta": 20,
+        "depth": 20
+    },
+    "lrs": {
+        "mu_a0":      1e-3, "mu_high":      1e-4,
+        "opacity_a0": 5e-2, "opacity_high": 5e-3,
+        "color_a0":   1e-2, "color_high":   1e-3,
+        "scale_a0":   5e-3, "scale_high":   5e-4,
+        "theta_a0":   5e-3, "theta_high":   5e-4,
+        "depth_a0":   5e-3, "depth_high":   5e-4
+    },
+    "n_epochs": 300,
+    "beta_smoothness": 1e-5,
+    "pesos_smoothness": {
+        "mu": 1.0,
+        "opacity": 0.5,
+        "color": 2.0,
+        "scale": 2.0,
+        "theta": 2.0,
+        "depth": 2.0
+    },
+    "umbral_pruning_post": 0.05,
+    "checkpoint_cada_n_epochs": 50,
+    "sub_batch_frames": 1,
+    "lambda_dssim": 0.2,
+    "escala_inicial_px": 5.0,
+    "max_frames": null,
+    "calidades_avif": [80, 95],
+    "device": "cuda",
+    "seed": 42
+}

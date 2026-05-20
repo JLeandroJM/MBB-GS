@@ -1,0 +1,66 @@
+{
+  "_comentario": "Pelotas rebotando 5s @ 25fps. Monomial. Mismos N y n_epochs que el config Chebyshev gemelo. Grados MENORES y LRs _high mas conservadores porque la base monomial (Vandermonde con t en [0,1]) se vuelve mal condicionada con grados altos. En RTX 3050: bajar N a 1500.",
+
+  "nombre_experimento": "pelotas_mono",
+  "base": "monomial",
+
+  "video_mp4": "video/pelotas.mp4",
+  "n_frames_extraer": 125,
+  "fps_extraccion": 25,
+  "resolucion_extraccion": [256, 256],
+  "forzar_extraccion": false,
+  "inicializar_color_desde_frame0": true,
+  "clip": "pelotas_clips",
+
+  "n_gaussianas_inicial": 2500,
+
+  "grados": {
+    "mu": 20,
+    "opacity": 16,
+    "color": 8,
+    "scale": 8,
+    "theta": 6,
+    "depth": 4
+  },
+
+  "lrs": {
+    "mu_a0":      0.001,  "mu_high":      0.0001,
+    "opacity_a0": 0.05,   "opacity_high": 0.005,
+    "color_a0":   0.01,   "color_high":   0.001,
+    "scale_a0":   0.005,  "scale_high":   0.0005,
+    "theta_a0":   0.005,  "theta_high":   0.0005,
+    "depth_a0":   0.001,  "depth_high":   0.0001
+  },
+
+  "n_epochs": 600,
+
+  "beta_smoothness": 1e-6,
+
+  "pesos_smoothness": {
+    "mu": 1.0,
+    "opacity": 0.5,
+    "color": 1.0,
+    "scale": 1.0,
+    "theta": 2.0,
+    "depth": 2.0
+  },
+
+  "umbral_pruning_post": 0.02,
+  "checkpoint_cada_n_epochs": 50,
+  "sub_batch_frames": 1,
+  "lambda_dssim": 0.5,
+  "escala_inicial_px": 5.0,
+
+  "max_frames": null,
+  "calidades_avif": [80, 95],
+
+  "device": "cuda",
+  "seed": 42,
+
+  "usar_cuda_conic": false,
+  "usar_cuda_tiled": true,
+  "cuda_tile_size": 16,
+  "cuda_k_sigma": 4.0,
+
+  "calcular_psnr_durante_training": true
+}

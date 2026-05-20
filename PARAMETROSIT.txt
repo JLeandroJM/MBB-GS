@@ -1,0 +1,407 @@
+##
+-------------------------  
+"sub_batch_frames": 3
+-----------------------
+
+(gs2d_clean) D:\TesisProyecto\Gaussian2D_Optimized>python scripts\train.py --config configs\config_pelotas_chebyMINITEST.json
+[rasterizador_cuda_tiled_autograd] buscando raster_cuda en: D:\TesisProyecto\Gaussian2D_Optimized\cuda\raster_cuda
+dispositivo: cuda
+base: chebyshev
+clip=thriller_clips  n_frames=125  resolucion=288x512
+matrices (chebyshev) construidas para grados: [6, 8, 12, 24, 30]
+modelo: N=10000  grados={'mu': 30, 'opacity': 24, 'color': 12, 'scale': 12, 'theta': 8, 'depth': 6}
+
+=== entrenamiento (500 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/500  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=6.0min
+  epoch   10/500  loss_r=0.09546  loss_s=1.018e+00  t_epoch=0.6s  eta=4.3min
+  epoch   20/500  loss_r=0.07106  loss_s=5.427e+00  t_epoch=0.5s  eta=4.1min
+  epoch   30/500  loss_r=0.05365  loss_s=1.650e+01  t_epoch=0.5s  eta=4.1min
+  epoch   40/500  loss_r=0.04123  loss_s=3.618e+01  t_epoch=0.6s  eta=4.0min
+  epoch   50/500  loss_r=0.03431  loss_s=5.427e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=4.0min
+  epoch   60/500  loss_r=0.03014  loss_s=6.078e+01  t_epoch=0.6s  eta=4.0min
+  epoch   70/500  loss_r=0.02739  loss_s=5.659e+01  t_epoch=0.6s  eta=3.9min
+  epoch   80/500  loss_r=0.02545  loss_s=5.238e+01  t_epoch=0.6s  eta=3.8min
+  epoch   90/500  loss_r=0.02397  loss_s=4.872e+01  t_epoch=0.6s  eta=3.8min
+  epoch  100/500  loss_r=0.02281  loss_s=4.752e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=3.7min
+  epoch  110/500  loss_r=0.02185  loss_s=4.719e+01  t_epoch=0.6s  eta=3.6min
+  epoch  120/500  loss_r=0.02104  loss_s=4.745e+01  t_epoch=0.6s  eta=3.6min
+  epoch  130/500  loss_r=0.02036  loss_s=4.756e+01  t_epoch=0.6s  eta=3.5min
+  epoch  140/500  loss_r=0.01976  loss_s=4.808e+01  t_epoch=0.6s  eta=3.4min
+  epoch  150/500  loss_r=0.01924  loss_s=4.922e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=3.3min
+  epoch  160/500  loss_r=0.01877  loss_s=5.044e+01  t_epoch=0.6s  eta=3.2min
+  epoch  170/500  loss_r=0.01834  loss_s=5.183e+01  t_epoch=0.6s  eta=3.2min
+  epoch  180/500  loss_r=0.01796  loss_s=5.353e+01  t_epoch=0.6s  eta=3.1min
+  epoch  190/500  loss_r=0.01760  loss_s=5.494e+01  t_epoch=0.6s  eta=3.0min
+  epoch  200/500  loss_r=0.01728  loss_s=5.624e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=2.9min
+  epoch  210/500  loss_r=0.01698  loss_s=5.712e+01  t_epoch=0.6s  eta=2.8min
+  epoch  220/500  loss_r=0.01671  loss_s=5.783e+01  t_epoch=0.6s  eta=2.7min
+  epoch  230/500  loss_r=0.01646  loss_s=5.839e+01  t_epoch=0.6s  eta=2.6min
+  epoch  240/500  loss_r=0.01623  loss_s=5.898e+01  t_epoch=0.6s  eta=2.5min
+  epoch  250/500  loss_r=0.01601  loss_s=5.960e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=2.4min
+  epoch  260/500  loss_r=0.01580  loss_s=6.029e+01  t_epoch=0.6s  eta=2.3min
+  epoch  270/500  loss_r=0.01561  loss_s=6.090e+01  t_epoch=0.6s  eta=2.2min
+  epoch  280/500  loss_r=0.01543  loss_s=6.135e+01  t_epoch=0.6s  eta=2.2min
+  epoch  290/500  loss_r=0.01526  loss_s=6.185e+01  t_epoch=0.6s  eta=2.1min
+  epoch  300/500  loss_r=0.01510  loss_s=6.229e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=2.0min
+  epoch  310/500  loss_r=0.01494  loss_s=6.277e+01  t_epoch=0.6s  eta=1.9min
+  epoch  320/500  loss_r=0.01480  loss_s=6.312e+01  t_epoch=0.6s  eta=1.8min
+  epoch  330/500  loss_r=0.01467  loss_s=6.346e+01  t_epoch=0.6s  eta=1.7min
+  epoch  340/500  loss_r=0.01454  loss_s=6.372e+01  t_epoch=0.6s  eta=1.6min
+  epoch  350/500  loss_r=0.01442  loss_s=6.391e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=1.5min
+  epoch  360/500  loss_r=0.01430  loss_s=6.409e+01  t_epoch=0.6s  eta=1.4min
+  epoch  370/500  loss_r=0.01419  loss_s=6.425e+01  t_epoch=0.6s  eta=1.3min
+  epoch  380/500  loss_r=0.01409  loss_s=6.439e+01  t_epoch=0.6s  eta=1.2min
+  epoch  390/500  loss_r=0.01399  loss_s=6.454e+01  t_epoch=0.6s  eta=1.1min
+  epoch  400/500  loss_r=0.01389  loss_s=6.474e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=1.0min
+  epoch  410/500  loss_r=0.01380  loss_s=6.493e+01  t_epoch=0.6s  eta=0.9min
+  epoch  420/500  loss_r=0.01371  loss_s=6.519e+01  t_epoch=0.6s  eta=0.8min
+  epoch  430/500  loss_r=0.01363  loss_s=6.543e+01  t_epoch=0.6s  eta=0.7min
+  epoch  440/500  loss_r=0.01355  loss_s=6.559e+01  t_epoch=0.7s  eta=0.6min
+  epoch  450/500  loss_r=0.01347  loss_s=6.585e+01  PSNR_avg=-1.00  t_epoch=0.7s  eta=0.5min
+  epoch  460/500  loss_r=0.01339  loss_s=6.602e+01  t_epoch=0.8s  eta=0.4min
+  epoch  470/500  loss_r=0.01332  loss_s=6.621e+01  t_epoch=0.7s  eta=0.3min
+  epoch  480/500  loss_r=0.01326  loss_s=6.631e+01  t_epoch=0.6s  eta=0.2min
+  epoch  490/500  loss_r=0.01319  loss_s=6.647e+01  t_epoch=0.6s  eta=0.1min
+  epoch  500/500  loss_r=0.01313  loss_s=6.665e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=0.0min
+
+=== DEBUG rangos de parametros activados ===
+
+  === frame 0 ===
+    mu        : min=-1.3  max=514.5  std=132.19
+    scale (px): min=0.50  mean=3.15  max=202.05
+    opacity   : min=0.000  mean=0.537  max=1.000
+    theta     : min=-1.46  max=1.61
+    color     : min=0.000  max=1.000
+
+  === frame mid ===
+    mu        : min=-2.3  max=517.3  std=132.16
+    scale (px): min=0.50  mean=3.47  max=74.60
+    opacity   : min=0.000  mean=0.441  max=1.000
+    theta     : min=-1.44  max=1.59
+    color     : min=0.000  max=1.000
+
+  === frame last ===
+    mu        : min=-2.5  max=516.0  std=132.25
+    scale (px): min=0.50  mean=3.03  max=105.66
+    opacity   : min=0.000  mean=0.326  max=1.000
+    theta     : min=-1.42  max=1.58
+    color     : min=0.000  max=1.000
+
+entrenamiento listo en 303.9s  (5.1min)
+
+=== metricas pre-pruning desactivadas ===
+
+=== pruning post-training desactivado ===
+  N: 10000 -> 10000
+
+=== render post-pruning ===
+[tiled] usando build_conic CUDA/C++
+[tiled] usando preprocess CUDA/C++
+
+=== debug movimiento render ===
+  diff frame0 vs mid  = 0.147550
+  diff mid vs last    = 0.118870
+  diff frame0 vs last = 0.163440
+
+
+#######################
+-------------------------  
+"sub_batch_frames": 5 v1
+-----------------------
+
+modelo: N=10000  grados={'mu': 26, 'opacity': 20, 'color': 4, 'scale': 12, 'theta': 8, 'depth': 4}
+
+=== entrenamiento (400 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/400  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=4.4min
+  epoch   40/400  loss_r=0.05211  loss_s=3.184e+01  t_epoch=0.5s  eta=3.1min
+  epoch   80/400  loss_r=0.03086  loss_s=7.348e+01  t_epoch=0.6s  eta=2.8min
+  epoch  120/400  loss_r=0.02467  loss_s=6.032e+01  t_epoch=0.5s  eta=2.5min
+  epoch  160/400  loss_r=0.02166  loss_s=5.996e+01  t_epoch=0.6s  eta=2.2min
+  epoch  200/400  loss_r=0.01976  loss_s=6.233e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=1.9min
+  epoch  240/400  loss_r=0.01842  loss_s=6.407e+01  t_epoch=0.6s  eta=1.5min
+  epoch  280/400  loss_r=0.01745  loss_s=6.486e+01  t_epoch=0.6s  eta=1.1min
+
+#######################
+-------------------------  
+"sub_batch_frames": 5 v2
+-----------------------
+
+matrices (chebyshev) construidas para grados: [4, 6, 10, 20, 26]
+modelo: N=10000  grados={'mu': 26, 'opacity': 20, 'color': 6, 'scale': 10, 'theta': 6, 'depth': 4}
+
+=== entrenamiento (400 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/400  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=4.4min
+  epoch   40/400  loss_r=0.04948  loss_s=2.367e+01  t_epoch=0.5s  eta=3.0min
+  epoch   80/400  loss_r=0.02907  loss_s=5.695e+01  t_epoch=0.5s  eta=2.8min
+  epoch  120/400  loss_r=0.02363  loss_s=4.742e+01  t_epoch=0.6s  eta=2.5min
+  epoch  160/400  loss_r=0.02093  loss_s=4.792e+01  t_epoch=0.6s  eta=2.2min
+  epoch  200/400  loss_r=0.01922  loss_s=5.071e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=1.8min
+  epoch  240/400  loss_r=0.01801  loss_s=5.360e+01  t_epoch=0.6s  eta=1.5min
+  epoch  280/400  loss_r=0.01711  loss_s=5.575e+01  t_epoch=0.6s  eta=1.1min
+
+
+#######################
+
+matrices (chebyshev) construidas para grados: [4, 6, 10, 20]
+modelo: N=10000  grados={'mu': 20, 'opacity': 20, 'color': 6, 'scale': 10, 'theta': 6, 'depth': 4}
+
+=== entrenamiento (400 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/400  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=4.5min
+  epoch   40/400  loss_r=0.04995  loss_s=2.343e+01  t_epoch=0.5s  eta=3.0min
+  epoch   80/400  loss_r=0.02975  loss_s=5.845e+01  t_epoch=0.5s  eta=2.8min
+  epoch  120/400  loss_r=0.02443  loss_s=4.975e+01  t_epoch=0.5s  eta=2.5min
+  epoch  160/400  loss_r=0.02178  loss_s=4.991e+01  t_epoch=0.6s  eta=2.1min
+  epoch  200/400  loss_r=0.02007  loss_s=5.107e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=1.8min
+
+
+#######################
+
+
+matrices (chebyshev) construidas para grados: [4, 6, 8, 10, 20, 22]
+modelo: N=10000  grados={'mu': 22, 'opacity': 20, 'color': 8, 'scale': 10, 'theta': 6, 'depth': 4}
+
+=== entrenamiento (400 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/400  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=4.9min
+  epoch   40/400  loss_r=0.04690  loss_s=2.461e+01  t_epoch=0.5s  eta=3.1min
+  epoch   80/400  loss_r=0.02840  loss_s=5.188e+01  t_epoch=0.5s  eta=2.8min
+  epoch  120/400  loss_r=0.02348  loss_s=4.411e+01  t_epoch=0.6s  eta=2.5min
+  epoch  160/400  loss_r=0.02098  loss_s=4.612e+01  t_epoch=0.6s  eta=2.2min
+
+#######################
+
+matrices (chebyshev) construidas para grados: [4, 6, 10, 20, 22]
+modelo: N=10000  grados={'mu': 22, 'opacity': 20, 'color': 10, 'scale': 10, 'theta': 6, 'depth': 4}
+
+=== entrenamiento (400 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/400  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=4.4min
+  epoch   40/400  loss_r=0.04477  loss_s=2.605e+01  t_epoch=0.5s  eta=3.1min
+  epoch   80/400  loss_r=0.02757  loss_s=4.756e+01  t_epoch=0.5s  eta=2.8min
+  epoch  120/400  loss_r=0.02295  loss_s=4.392e+01  t_epoch=0.6s  eta=2.6min
+
+#######################
+matrices (chebyshev) construidas para grados: [2, 4, 10, 20, 22]
+modelo: N=10000  grados={'mu': 22, 'opacity': 20, 'color': 10, 'scale': 10, 'theta': 2, 'depth': 4}
+
+=== entrenamiento (400 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=scaletrainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/400  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=4.7min
+  epoch   40/400  loss_r=0.04480  loss_s=1.151e+01  t_epoch=0.5s  eta=3.2min
+  epoch   80/400  loss_r=0.02762  loss_s=2.820e+01  t_epoch=0.6s  eta=2.9min
+  epoch  120/400  loss_r=0.02300  loss_s=2.892e+01  t_epoch=0.6s  eta=2.6min
+  epoch  160/400  loss_r=0.02061  loss_s=3.060e+01  t_epoch=0.6s  eta=2.3min
+  epoch  200/400  loss_r=0.01906  loss_s=3.351e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=1.9min
+  epoch  240/400  loss_r=0.01795  loss_s=3.677e+01  t_epoch=0.6s  eta=1.5min
+
+
+#########################
+
+matrices (chebyshev) construidas para grados: [2, 4, 10, 22]
+modelo: N=10000  grados={'mu': 22, 'opacity': 10, 'color': 10, 'scale': 10, 'theta': 2, 'depth': 4}
+
+=== entrenamiento (400 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/400  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=4.7min
+  epoch   40/400  loss_r=0.04716  loss_s=1.136e+01  t_epoch=0.5s  eta=3.1min
+  epoch   80/400  loss_r=0.02959  loss_s=2.871e+01  t_epoch=0.6s  eta=2.9min
+  epoch  120/400  loss_r=0.02487  loss_s=2.896e+01  t_epoch=0.6s  eta=2.6min
+  epoch  160/400  loss_r=0.02235  loss_s=3.043e+01  t_epoch=0.6s  eta=2.2min
+  epoch  200/400  loss_r=0.02071  loss_s=3.304e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=1.9min
+
+
+###########################
+matrices (chebyshev) construidas para grados: [2, 4, 8, 10, 16, 22]
+modelo: N=10000  grados={'mu': 22, 'opacity': 16, 'color': 10, 'scale': 8, 'theta': 2, 'depth': 4}
+
+=== entrenamiento (400 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/400  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=4.6min
+  epoch   40/400  loss_r=0.04685  loss_s=9.894e+00  t_epoch=0.5s  eta=3.0min
+  epoch   80/400  loss_r=0.02872  loss_s=2.513e+01  t_epoch=0.5s  eta=2.8min
+
+#############
+matrices (chebyshev) construidas para grados: [2, 4, 8, 12, 14, 26]
+modelo: N=10000  grados={'mu': 26, 'opacity': 14, 'color': 12, 'scale': 8, 'theta': 2, 'depth': 4}
+
+=== entrenamiento (400 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/400  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=4.7min
+  epoch   40/400  loss_r=0.04550  loss_s=9.902e+00  t_epoch=0.5s  eta=3.0min
+  epoch   80/400  loss_r=0.02802  loss_s=2.492e+01  t_epoch=0.5s  eta=2.8min
+
+############
+
+matrices (chebyshev) construidas para grados: [2, 4, 8, 12, 14, 22]
+modelo: N=10000  grados={'mu': 22, 'opacity': 14, 'color': 12, 'scale': 8, 'theta': 2, 'depth': 4}
+
+=== entrenamiento (400 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/400  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=4.4min
+  epoch   40/400  loss_r=0.04591  loss_s=9.783e+00  t_epoch=0.5s  eta=3.0min
+  epoch   80/400  loss_r=0.02857  loss_s=2.489e+01  t_epoch=0.5s  eta=2.8min
+  epoch  120/400  loss_r=0.02392  loss_s=2.504e+01  t_epoch=0.6s  eta=2.5min
+  epoch  160/400  loss_r=0.02151  loss_s=2.669e+01  t_epoch=0.6s  eta=2.2min
+
+
+
+  "escala_inicial_px": 2.5,
+
+###############################################
+"grados": {
+    "mu": 22,
+    "opacity": 14,
+    "color": 10,
+    "scale": 8,
+    "theta": 2,
+    "depth": 4
+  },
+###################################
+
+
+
+
+
+
+clip=thriller_clips  n_frames=125  resolucion=288x512
+matrices (chebyshev) construidas para grados: [2, 4, 8, 10, 14, 22]
+modelo: N=10000  grados={'mu': 22, 'opacity': 14, 'color': 10, 'scale': 8, 'theta': 2, 'depth': 4}
+
+=== entrenamiento (500 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] scheduler ReduceLROnPlateau activado (factor=0.5, patience=40, min_lr=1e-06)
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/500  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=5.7min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch   40/500  loss_r=0.04732  loss_s=9.786e+00  t_epoch=0.5s  eta=3.9min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch   80/500  loss_r=0.02912  loss_s=2.573e+01  t_epoch=0.6s  eta=3.7min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  120/500  loss_r=0.02428  loss_s=2.623e+01  t_epoch=0.6s  eta=3.5min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  160/500  loss_r=0.02179  loss_s=2.744e+01  t_epoch=0.6s  eta=3.1min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  200/500  loss_r=0.02017  loss_s=2.933e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=2.8min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  240/500  loss_r=0.01902  loss_s=3.147e+01  t_epoch=0.6s  eta=2.4min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  280/500  loss_r=0.01814  loss_s=3.367e+01  t_epoch=0.6s  eta=2.1min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  320/500  loss_r=0.01745  loss_s=3.604e+01  t_epoch=0.6s  eta=1.7min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  360/500  loss_r=0.01688  loss_s=3.814e+01  t_epoch=0.6s  eta=1.3min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  400/500  loss_r=0.01641  loss_s=3.976e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=1.0min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  440/500  loss_r=0.01601  loss_s=4.108e+01  t_epoch=0.6s  eta=0.6min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  480/500  loss_r=0.01567  loss_s=4.211e+01  t_epoch=0.6s  eta=0.2min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  500/500  loss_r=0.01551  loss_s=4.251e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=0.0min  lr_min=1.00e-04 lr_max=5.00e-02
+
+=== DEBUG rangos de parametros activados ===
+
+  === frame 0 ===
+    mu        : min=-1.1  max=514.2  std=132.19
+    scale (px): min=0.50  mean=3.38  max=195.71
+    opacity   : min=0.000  mean=0.540  max=1.000
+    theta     : min=-1.45  max=1.44
+    color     : min=0.000  max=1.000
+
+  === frame mid ===
+    mu        : min=-5.0  max=514.4  std=132.24
+    scale (px): min=0.50  mean=3.56  max=110.95
+    opacity   : min=0.000  mean=0.439  max=1.000
+    theta     : min=-1.46  max=1.44
+    color     : min=0.000  max=1.000
+
+  === frame last ===
+    mu        : min=-2.0  max=513.8  std=132.20
+    scale (px): min=0.50  mean=3.19  max=512.00
+    opacity   : min=0.000  mean=0.382  max=1.000
+    theta     : min=-1.47  max=1.46
+    color     : min=0.000  max=1.000
+
+entrenamiento listo en 288.5s  (4.8min)
+
+=== metricas pre-pruning desactivadas ===
+
+=== pruning post-training desactivado ===
+  N: 10000 -> 10000
+
+
+##################################################
+  "usar_scheduler": true,
+  "scheduler_factor": 0.5,
+  "scheduler_patience": 25,
+  "scheduler_min_lr": 0.000001,
+  "scheduler_threshold": 0.0002,
+
+#############################################
+
+[rasterizador_cuda_tiled_autograd] buscando raster_cuda en: D:\TesisProyecto\Gaussian2D_Optimized\cuda\raster_cuda
+dispositivo: cuda
+base: chebyshev
+clip=thriller_clips  n_frames=125  resolucion=288x512
+matrices (chebyshev) construidas para grados: [2, 4, 8, 10, 14, 22]
+modelo: N=10000  grados={'mu': 22, 'opacity': 14, 'color': 10, 'scale': 8, 'theta': 2, 'depth': 4}
+
+=== entrenamiento (800 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] scheduler ReduceLROnPlateau activado (factor=0.5, patience=25, min_lr=1e-06)
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/800  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=8.9min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch   40/800  loss_r=0.04732  loss_s=9.787e+00  t_epoch=0.5s  eta=6.5min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch   80/800  loss_r=0.02912  loss_s=2.573e+01  t_epoch=0.6s  eta=6.4min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  120/800  loss_r=0.02428  loss_s=2.623e+01  t_epoch=0.6s  eta=6.2min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  160/800  loss_r=0.02179  loss_s=2.743e+01  t_epoch=0.6s  eta=5.9min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  200/800  loss_r=0.02017  loss_s=2.934e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=5.6min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  240/800  loss_r=0.01903  loss_s=3.148e+01  t_epoch=0.6s  eta=5.3min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  280/800  loss_r=0.01815  loss_s=3.371e+01  t_epoch=0.6s  eta=4.9min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  320/800  loss_r=0.01745  loss_s=3.605e+01  t_epoch=0.6s  eta=4.6min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  360/800  loss_r=0.01688  loss_s=3.813e+01  t_epoch=0.6s  eta=4.2min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  400/800  loss_r=0.01641  loss_s=3.977e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=3.8min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  440/800  loss_r=0.01601  loss_s=4.109e+01  t_epoch=0.6s  eta=3.5min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  480/800  loss_r=0.01567  loss_s=4.207e+01  t_epoch=0.6s  eta=3.1min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  520/800  loss_r=0.01537  loss_s=4.285e+01  t_epoch=0.6s  eta=2.7min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  560/800  loss_r=0.01510  loss_s=4.346e+01  t_epoch=0.6s  eta=2.3min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  600/800  loss_r=0.01487  loss_s=4.392e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=2.0min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  640/800  loss_r=0.01465  loss_s=4.426e+01  t_epoch=0.6s  eta=1.6min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  680/800  loss_r=0.01446  loss_s=4.451e+01  t_epoch=0.6s  eta=1.2min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  720/800  loss_r=0.01428  loss_s=4.471e+01  t_epoch=0.6s  eta=0.8min  lr_min=1.00e-04 lr_max=5.00e-02
+
+
+##########################
+
+
+modelo: N=10000  grados={'mu': 24, 'opacity': 16, 'color': 24, 'scale': 8, 'theta': 4, 'depth': 4}
+
+=== entrenamiento (500 epochs) ===
+[trainer] usando loss CUDA fusionada tipo=l1
+[trainer] usando rasterizador CUDA tiled diferenciable (tile=16, k_sigma=4.0)
+  epoch    1/500  loss_r=0.13226  loss_s=0.000e+00  PSNR_avg=-1.00  t_epoch=0.7s  eta=5.8min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch   20/500  loss_r=0.07094  loss_s=3.274e+00  t_epoch=0.5s  eta=4.0min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch   40/500  loss_r=0.04124  loss_s=1.807e+01  t_epoch=0.5s  eta=4.0min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch   60/500  loss_r=0.03028  loss_s=3.286e+01  t_epoch=0.6s  eta=3.9min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch   80/500  loss_r=0.02591  loss_s=3.244e+01  t_epoch=0.6s  eta=3.8min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  100/500  loss_r=0.02348  loss_s=3.095e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=3.6min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  120/500  loss_r=0.02187  loss_s=3.062e+01  t_epoch=0.6s  eta=3.5min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  140/500  loss_r=0.02068  loss_s=3.111e+01  t_epoch=0.6s  eta=3.3min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  160/500  loss_r=0.01973  loss_s=3.261e+01  t_epoch=0.6s  eta=3.2min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  180/500  loss_r=0.01897  loss_s=3.449e+01  t_epoch=0.6s  eta=3.0min  lr_min=1.00e-04 lr_max=5.00e-02
+  epoch  200/500  loss_r=0.01832  loss_s=3.634e+01  PSNR_avg=-1.00  t_epoch=0.6s  eta=2.8min  lr_min=1.00e-04 lr_max=5.00e-02
+
+#######################
+
+Para Michael:
+Parece que para este caso de Michael Jackson:
+  "grados": {
+    "mu": 28,
+    "opacity": 16,
+    "color": 24,
+    "scale": 8,
+    "theta": 4,
+    "depth": 4
+  },
+

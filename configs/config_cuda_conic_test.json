@@ -1,0 +1,56 @@
+{
+  "nombre_experimento": "exp09_cuda_conic_test",
+  "clip": "rockyourbody_clips",
+  "max_frames": 20,
+  "device": "cuda",
+  "base": "chebyshev",
+
+  "n_gaussianas_inicial": 100,
+
+  "grados": {
+    "mu": 4,
+    "opacity": 4,
+    "color": 4,
+    "scale": 3,
+    "theta": 3,
+    "depth": 3
+  },
+
+  "escala_inicial_px": 5.0,
+
+  "n_epochs": 50,
+  "sub_batch_frames": 1,
+
+  "lambda_dssim": 0.0,
+  "beta_smoothness": 0.00001,
+
+  "usar_cuda_conic": true,
+
+  "lrs": {
+    "mu_a0": 0.001,
+    "mu_high": 0.0001,
+    "opacity_a0": 0.05,
+    "opacity_high": 0.005,
+    "color_a0": 0.01,
+    "color_high": 0.001,
+    "scale_a0": 0.005,
+    "scale_high": 0.0005,
+    "theta_a0": 0.005,
+    "theta_high": 0.0005,
+    "depth_a0": 0.0005,
+    "depth_high": 0.00005
+  },
+
+  "pesos_smoothness": {
+    "mu": 1.0,
+    "opacity": 0.5,
+    "color": 1.5,
+    "scale": 1.5,
+    "theta": 1.0,
+    "depth": 1.0
+  },
+
+  "checkpoint_cada_n_epochs": 1,
+  "umbral_pruning_post": 0.03,
+  "calidades_avif": [80]
+}
