@@ -167,28 +167,6 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     losses_render = []
     losses_smooth = []
     losses_total = []
-    if usar_scheduler_lento and len(losses_render) > scheduler_lento_window:
-        loss_antes = losses_render[-scheduler_lento_window - 1]
-        loss_ahora = losses_render[-1]
-        mejora_ventana = loss_antes - loss_ahora
-
-        paso_cooldown = (epoch + 1) - ultimo_epoch_reduce_lr >= scheduler_lento_cooldown
-
-        if mejora_ventana < scheduler_lento_min_delta and paso_cooldown:
-            for grupo in optimizer.param_groups:
-                lr_actual = grupo["lr"]
-                nuevo_lr = max(lr_actual * scheduler_lento_factor, scheduler_lento_min_lr)
-                grupo["lr"] = nuevo_lr
-
-            ultimo_epoch_reduce_lr = epoch + 1
-
-            lrs_actuales = [g["lr"] for g in optimizer.param_groups]
-            print(
-                f"[trainer] scheduler lento redujo LR en epoch {epoch + 1}: "
-                f"mejora_ventana={mejora_ventana:.6f} < {scheduler_lento_min_delta:.6f} | "
-                f"lr_min={min(lrs_actuales):.2e} lr_max={max(lrs_actuales):.2e}",
-                flush=True,
-            )
     psnrs_chk = []
     tiempos = []
 

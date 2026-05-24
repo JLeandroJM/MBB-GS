@@ -23,7 +23,7 @@ SRC = RAIZ / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from gs2d_video.core.bases import construir_matriz
+from gs2d_video.core.bases import construir_matriz_chebyshev
 from gs2d_video.core.modelo import GaussianasPolinomial2D
 from gs2d_video.core.optimizador import construir_optimizador
 from gs2d_video.core.pruning_post import prunear_post
@@ -167,7 +167,6 @@ def main():
 
     device = elegir_device(config["device"])
     print(f"dispositivo: {device}", flush=True)
-    print(f"base: {config['base']}", flush=True)
 
     # === preparar clip ======================================================
     clip = config["clip"]
@@ -210,14 +209,13 @@ def main():
     os.makedirs(salida, exist_ok=True)
 
     # === modelo y matrices ==================================================
-    base = config["base"]
     grados = config["grados"]
     grados_distintos = sorted(set(grados.values()))
     matrices_base = {
-        g: construir_matriz(base, n_frames, g, device=device, dtype=torch.float32)
+        g: construir_matriz_chebyshev(n_frames, g, device=device, dtype=torch.float32)
         for g in grados_distintos
     }
-    print(f"matrices ({base}) construidas para grados: {grados_distintos}", flush=True)
+    print(f"matrices chebyshev construidas para grados: {grados_distintos}", flush=True)
 
     usar_frame0_color = bool(config.get("inicializar_color_desde_frame0", True))
     frame_init_color = frames[0] if usar_frame0_color else None
@@ -226,7 +224,6 @@ def main():
         n_gaussianas=config["n_gaussianas_inicial"],
         n_frames=n_frames,
         grados=grados,
-        base=base,
         H=H,
         W=W,
         device=device,
@@ -343,7 +340,6 @@ def main():
         print("\n=== pruning post-training ===", flush=True)
         n_orig, n_final, _ = prunear_post(
             modelo,
-            base,
             umbral=float(config.get("umbral_pruning_post", 0.05)),
             n_samples=int(config.get("pruning_n_samples", 200)),
         )
@@ -420,7 +416,6 @@ def main():
     with open(os.path.join(salida, "metricas_calidad.json"), "w") as f:
         json.dump({
             "exp": nombre_exp,
-            "base": base,
             "clip": clip,
             "n_frames": n_frames,
             "resolucion": [H, W],

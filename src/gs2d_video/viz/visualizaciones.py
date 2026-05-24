@@ -5,13 +5,13 @@ Visualizaciones clave.
 2. heatmap_opacity_temporal.png : (N, T) con sigma(opacity_i(t_j))
 3. evolucion_parametros.png     : top-5 gaussianas, todos sus parametros vs t
 4. coeficientes_magnitudes.png  : histograma de magnitudes a_k por k
-5. reconstruccion_vs_original.gif : original | reconstruido | diff x5
+
+El GIF original|reconstruido|diff se arma en scripts/train.py con
+guardar_gif_desde_render, no aqui.
 """
-import os
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-import imageio.v2 as imageio
 
 
 
@@ -162,34 +162,3 @@ def generar_coeficientes_magnitudes(modelo, ruta):
 
 
 
-@torch.no_grad()
-def generar_reconstruccion_gif(modelo, frames, matrices_base, ruta_gif,
-                                paso=2, factor_diff=5.0, duracion=0.066):
-    raise RuntimeError(
-        "generar_reconstruccion_gif usa el rasterizador viejo. "
-        "Usa generar_reconstruccion_gif_desde_render con render_post ya calculado."
-    )
-
-
-@torch.no_grad()
-def generar_reconstruccion_gif_desde_render(render_batch, frames, ruta_gif,
-                                            paso=2, factor_diff=5.0, duracion=0.066):
-    """
-    Genera GIF original | reconstruido | diff usando renders ya calculados.
-
-    Esta version evita volver a rasterizar con el rasterizador PyTorch viejo.
-    Usala desde correr.py cuando ya tengas render_post calculado con CUDA.
-    """
-    cuadros = []
-    render_np = render_batch.detach().clamp(0, 1).cpu().numpy()
-    frames_np = frames.detach().clamp(0, 1).cpu().numpy()
-
-    n_frames = render_np.shape[0]
-    for j in range(0, n_frames, paso):
-        target = frames_np[j]
-        render = render_np[j]
-        diff = np.clip(np.abs(target - render) * factor_diff, 0, 1)
-        concat = np.concatenate([target, render, diff], axis=1)
-        cuadros.append((concat * 255).astype(np.uint8))
-
-    imageio.mimsave(ruta_gif, cuadros, duration=duracion)

@@ -1,6 +1,6 @@
 """
 GaussianasPolinomial2D: modelo donde TODOS los parametros son polinomios
-de la base elegida (chebyshev o monomial), agnostico a cual.
+en la base de Chebyshev de primer tipo.
 
 Diseno - DECISION (a_0 vs a_high):
 ----------------------------------
@@ -29,14 +29,13 @@ from torch import nn
 
 class GaussianasPolinomial2D(nn.Module):
 
-    def __init__(self, n_gaussianas, n_frames, grados, base, H, W, device,
+    def __init__(self, n_gaussianas, n_frames, grados, H, W, device,
                  escala_inicial_px=5.0, frame_0_imagen=None, semilla=42):
         """
         Args:
             n_gaussianas       : N
             n_frames           : T del clip
             grados             : dict {'mu':40, 'opacity':40, 'color':20, 'scale':20, 'theta':20, 'depth':20}
-            base               : 'chebyshev' o 'monomial' (solo se guarda como metadato)
             H, W               : alto, ancho de la imagen
             device             : torch.device
             escala_inicial_px  : log(esto) va al a_0 de scale
@@ -50,7 +49,6 @@ class GaussianasPolinomial2D(nn.Module):
         self.n_frames = n_frames
         self.H = H
         self.W = W
-        self.base = base
         self.grados = dict(grados)
         self.device = device
 
@@ -191,7 +189,6 @@ class GaussianasPolinomial2D(nn.Module):
             d[f"{nombre}_a0"]   = a0.detach().cpu()
             d[f"{nombre}_high"] = hi.detach().cpu()
         d['grados'] = self.grados
-        d['base']   = self.base
         d['N']      = self.N
         d['H']      = self.H
         d['W']      = self.W
@@ -262,41 +259,40 @@ def _muestrear_color_bilineal(img_hw3, pos_fila_col):
 # ===========================================================================
 
 def _tests():
-    from gs2d_video.core.bases import construir_matriz
+    from gs2d_video.core.bases import construir_matriz_chebyshev
 
     device = torch.device('cpu')
     n_g, n_f, H, W = 7, 20, 32, 32
     grados = {'mu': 8, 'opacity': 8, 'color': 4, 'scale': 4, 'theta': 4, 'depth': 4}
 
-    for base in ['chebyshev', 'monomial']:
-        modelo = GaussianasPolinomial2D(n_g, n_f, grados, base, H, W, device, semilla=0)
+    modelo = GaussianasPolinomial2D(n_g, n_f, grados, H, W, device, semilla=0)
 
-        matrices = {
-            8: construir_matriz(base, n_f, 8, device),
-            4: construir_matriz(base, n_f, 4, device),
-        }
+    matrices = {
+        8: construir_matriz_chebyshev(n_f, 8, device),
+        4: construir_matriz_chebyshev(n_f, 4, device),
+    }
 
-        # eval en frame 0 con a_high=0 -> p(t) = a_0 * T_0(t) = a_0 * 1
-        out_frame = modelo.evaluar_en_frame(0, matrices)
-        assert out_frame['mu'].shape == (n_g, 2)
-        assert out_frame['opacity'].shape == (n_g,)
-        assert out_frame['color'].shape == (n_g, 3)
-        assert out_frame['scale'].shape == (n_g, 2)
+    # eval en frame 0 con a_high=0 -> p(t) = a_0 * T_0(t) = a_0 * 1
+    out_frame = modelo.evaluar_en_frame(0, matrices)
+    assert out_frame['mu'].shape == (n_g, 2)
+    assert out_frame['opacity'].shape == (n_g,)
+    assert out_frame['color'].shape == (n_g, 3)
+    assert out_frame['scale'].shape == (n_g, 2)
 
-        # eval batch completo
-        out_batch = modelo.evaluar_batch_completo(matrices)
-        assert out_batch['mu'].shape == (n_f, n_g, 2)
-        assert out_batch['opacity'].shape == (n_f, n_g)
-        assert out_batch['color'].shape == (n_f, n_g, 3)
-        assert out_batch['scale'].shape == (n_f, n_g, 2)
+    # eval batch completo
+    out_batch = modelo.evaluar_batch_completo(matrices)
+    assert out_batch['mu'].shape == (n_f, n_g, 2)
+    assert out_batch['opacity'].shape == (n_f, n_g)
+    assert out_batch['color'].shape == (n_f, n_g, 3)
+    assert out_batch['scale'].shape == (n_f, n_g, 2)
 
-        # single-frame de un eje del batch debe coincidir con eval_en_frame
-        out_single_5 = modelo.evaluar_en_frame(5, matrices)
-        assert torch.allclose(out_batch['mu'][5], out_single_5['mu'], atol=1e-5), \
-            f"batch vs single no coincide ({base})"
-        assert torch.allclose(out_batch['opacity'][5], out_single_5['opacity'], atol=1e-5)
+    # single-frame de un eje del batch debe coincidir con eval_en_frame
+    out_single_5 = modelo.evaluar_en_frame(5, matrices)
+    assert torch.allclose(out_batch['mu'][5], out_single_5['mu'], atol=1e-5), \
+        "batch vs single no coincide"
+    assert torch.allclose(out_batch['opacity'][5], out_single_5['opacity'], atol=1e-5)
 
-        print(f"[modelo] {base} OK")
+    print("[modelo] OK")
 
 
 if __name__ == "__main__":
