@@ -83,15 +83,23 @@ def cargar_clip(carpeta_clip, device, max_frames=None):
     if max_frames is not None:
         archivos = archivos[:max_frames]
 
-    fr = []
-    for nombre in archivos:
-        img = Image.open(os.path.join(carpeta_clip, nombre)).convert("RGB")
-        fr.append(torch.from_numpy(np.array(img, dtype=np.float32) / 255.0))
-
-    if not fr:
+    if not archivos:
         raise RuntimeError(f"no se encontraron frames PNG en {carpeta_clip}")
 
-    return torch.stack(fr, dim=0).to(device)
+    # Leer primera imagen para dimensiones.
+    img0 = Image.open(os.path.join(carpeta_clip, archivos[0])).convert("RGB")
+    arr0 = np.asarray(img0, dtype=np.uint8)
+    H, W, C = arr0.shape
+
+    data = np.empty((len(archivos), H, W, C), dtype=np.uint8)
+    data[0] = arr0
+
+    for i, nombre in enumerate(archivos[1:], start=1):
+        img = Image.open(os.path.join(carpeta_clip, nombre)).convert("RGB")
+        data[i] = np.asarray(img, dtype=np.uint8)
+
+    frames = torch.from_numpy(data).to(device=device, dtype=torch.float32).div_(255.0)
+    return frames
 
 
 def elegir_device(device_str):
@@ -445,14 +453,32 @@ def main():
     # === metricas de compresion ============================================
     if calcular_compresion:
         print("\n=== metricas de compresion ===", flush=True)
-        if render_np is None and render_post is not None:
-            render_np = render_post.detach().clamp(0, 1).cpu().numpy()
 
-        if render_np is None:
+        if render_post is None:
             print("  omitidas: no hay render_post disponible", flush=True)
         else:
-            frames_np = (frames.detach().cpu().numpy() * 255).astype(np.uint8)
-            render_np_u8 = (render_np * 255).astype(np.uint8)
+            print("  convirtiendo frames a uint8 de forma segura...", flush=True)
+
+            frames_np = (
+                frames
+                .detach()
+                .clamp(0, 1)
+                .mul(255)
+                .to(torch.uint8)
+                .cpu()
+                .numpy()
+            )
+
+            render_np_u8 = (
+                render_post
+                .detach()
+                .clamp(0, 1)
+                .mul(255)
+                .to(torch.uint8)
+                .cpu()
+                .numpy()
+            )
+
             rep_comp = reporte_compresion(
                 modelo,
                 render_np_u8,

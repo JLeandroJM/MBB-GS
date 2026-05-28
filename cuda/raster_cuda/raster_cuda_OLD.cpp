@@ -216,8 +216,8 @@ torch::Tensor raster_forward_tiled(
     TORCH_CHECK(conic.dtype() == torch::kFloat32, "conic debe ser float32");
     TORCH_CHECK(opacity.dtype() == torch::kFloat32, "opacity debe ser float32");
     TORCH_CHECK(color.dtype() == torch::kFloat32, "color debe ser float32");
-    TORCH_CHECK(gaussian_ids.dtype() == torch::kInt32, "gaussian_ids debe ser int32");
-    TORCH_CHECK(ranges.dtype() == torch::kInt32, "ranges debe ser int32");
+    TORCH_CHECK(gaussian_ids.dtype() == torch::kInt64, "gaussian_ids debe ser int64");
+    TORCH_CHECK(ranges.dtype() == torch::kInt64, "ranges debe ser int64");
 
     TORCH_CHECK(mu.dim() == 2 && mu.size(1) == 2, "mu debe tener shape (N, 2)");
     TORCH_CHECK(conic.dim() == 2 && conic.size(1) == 3, "conic debe tener shape (N, 3)");
@@ -303,8 +303,8 @@ std::vector<torch::Tensor> raster_backward_tiled(
     TORCH_CHECK(color.dtype() == torch::kFloat32, "color debe ser float32");
     TORCH_CHECK(grad_out.dtype() == torch::kFloat32, "grad_out debe ser float32");
 
-    TORCH_CHECK(gaussian_ids.dtype() == torch::kInt32, "gaussian_ids debe ser int32");
-    TORCH_CHECK(ranges.dtype() == torch::kInt32, "ranges debe ser int32");
+    TORCH_CHECK(gaussian_ids.dtype() == torch::kInt64, "gaussian_ids debe ser int64");
+    TORCH_CHECK(ranges.dtype() == torch::kInt64, "ranges debe ser int64");
 
     TORCH_CHECK(tile_size > 0, "tile_size debe ser positivo");
     TORCH_CHECK(tile_size * tile_size <= 256, "tile_size demasiado grande para esta version optimizada");
@@ -355,8 +355,8 @@ std::vector<torch::Tensor> raster_forward_tiled_train(
     TORCH_CHECK(conic.dtype() == torch::kFloat32, "conic debe ser float32");
     TORCH_CHECK(opacity.dtype() == torch::kFloat32, "opacity debe ser float32");
     TORCH_CHECK(color.dtype() == torch::kFloat32, "color debe ser float32");
-    TORCH_CHECK(gaussian_ids.dtype() == torch::kInt32, "gaussian_ids debe ser int32");
-    TORCH_CHECK(ranges.dtype() == torch::kInt32, "ranges debe ser int32");
+    TORCH_CHECK(gaussian_ids.dtype() == torch::kInt64, "gaussian_ids debe ser int64");
+    TORCH_CHECK(ranges.dtype() == torch::kInt64, "ranges debe ser int64");
 
     TORCH_CHECK(tile_size > 0, "tile_size debe ser positivo");
     TORCH_CHECK(tile_size * tile_size <= 256, "tile_size demasiado grande para esta version optimizada");
@@ -407,8 +407,8 @@ std::vector<torch::Tensor> raster_backward_tiled_fast(
     TORCH_CHECK(color.dtype() == torch::kFloat32, "color debe ser float32");
     TORCH_CHECK(final_Ts.dtype() == torch::kFloat32, "final_Ts debe ser float32");
     TORCH_CHECK(grad_out.dtype() == torch::kFloat32, "grad_out debe ser float32");
-    TORCH_CHECK(gaussian_ids.dtype() == torch::kInt32, "gaussian_ids debe ser int32");
-    TORCH_CHECK(ranges.dtype() == torch::kInt32, "ranges debe ser int32");
+    TORCH_CHECK(gaussian_ids.dtype() == torch::kInt64, "gaussian_ids debe ser int64");
+    TORCH_CHECK(ranges.dtype() == torch::kInt64, "ranges debe ser int64");
     TORCH_CHECK(n_contrib.dtype() == torch::kInt32, "n_contrib debe ser int32");
 
     TORCH_CHECK(tile_size > 0, "tile_size debe ser positivo");
@@ -545,8 +545,8 @@ std::vector<torch::Tensor> raster_forward_tiled_train_loss(
     TORCH_CHECK(opacity.dtype() == torch::kFloat32, "opacity debe ser float32");
     TORCH_CHECK(color.dtype() == torch::kFloat32, "color debe ser float32");
     TORCH_CHECK(target.dtype() == torch::kFloat32, "target debe ser float32");
-    TORCH_CHECK(gaussian_ids.dtype() == torch::kInt32, "gaussian_ids debe ser int32");
-    TORCH_CHECK(ranges.dtype() == torch::kInt32, "ranges debe ser int32");
+    TORCH_CHECK(gaussian_ids.dtype() == torch::kInt64, "gaussian_ids debe ser int64");
+    TORCH_CHECK(ranges.dtype() == torch::kInt64, "ranges debe ser int64");
 
     TORCH_CHECK(target.dim() == 3, "target debe tener shape (H, W, 3)");
     TORCH_CHECK(target.size(0) == H, "target H incorrecto");

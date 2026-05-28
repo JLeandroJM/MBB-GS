@@ -3,7 +3,7 @@
 #include <cuda_runtime.h>
 #include <cub/cub.cuh>
 #include <ATen/cuda/CUDAContext.h>
-#include <climits>  
+#include <climits>
 
 #ifndef RASTER_BATCH_SIZE
 #define RASTER_BATCH_SIZE 256
@@ -71,8 +71,8 @@ __global__ void build_conic_kernel(
     float sy = scale[i * 2 + 1];
     float th = theta[i];
 
-    float s, c;
-    __sincosf(th, &s, &c);
+    float c = cosf(th);
+    float s = sinf(th);
 
     float inv_sx2 = 1.0f / (sx * sx + 1e-8f);
     float inv_sy2 = 1.0f / (sy * sy + 1e-8f);
@@ -98,8 +98,8 @@ __global__ void grad_conic_to_scale_theta_kernel(
     float sy = scale[i * 2 + 1];
     float th = theta[i];
 
-    float s, c;
-    __sincosf(th, &s, &c);
+    float c = cosf(th);
+    float s = sinf(th);
 
     float den_x = sx * sx + 1e-8f;
     float den_y = sy * sy + 1e-8f;
@@ -281,7 +281,7 @@ __global__ void raster_forward_conic_kernel(
 }
 
 
-__global__ __launch_bounds__(256) void raster_forward_tiled_kernel(
+__global__ void raster_forward_tiled_kernel(
     const float* __restrict__ mu,
     const float* __restrict__ conic,
     const float* __restrict__ opacity,
@@ -337,9 +337,8 @@ __global__ __launch_bounds__(256) void raster_forward_tiled_kernel(
 
     const float T_MIN = 1.0e-4f;
 
-    for (int batch_start = start; batch_start < end; batch_start += RASTER_BATCH_SIZE) {
-        int remaining = (int)(end - batch_start);
-        int batch_count = remaining < RASTER_BATCH_SIZE ? remaining : RASTER_BATCH_SIZE;
+    for (long long batch_start = start; batch_start < end; batch_start += RASTER_BATCH_SIZE) {
+        int batch_count = (int)min((long long)RASTER_BATCH_SIZE, end - batch_start);
 
         // Threads cooperate to load gaussian data once per tile.
         for (int load_id = tid; load_id < batch_count; load_id += blockDim.x) {
@@ -645,8 +644,8 @@ __global__ void raster_backward_tiled_kernel(
     int tile_y = fila / tile_size;
     int tile_id = tile_y * tiles_x + tile_x;
 
-    int start = ranges[tile_id * 2 + 0];
-    int end = ranges[tile_id * 2 + 1];
+    int64_t start = ranges[tile_id * 2 + 0];
+    int64_t end = ranges[tile_id * 2 + 1];
 
     if (start < 0 || end <= start) {
         return;
@@ -667,12 +666,12 @@ __global__ void raster_backward_tiled_kernel(
     //
     // Esto valida el backward tiled. No es la version final optimizada.
 
-    for (int ii = start; ii < end; ii++) {
+    for (int64_t ii = start; ii < end; ii++) {
         int gid_i = (int)gaussian_ids[ii];
 
         float T_i = 1.0f;
 
-        for (int jj = start; jj < ii; jj++) {
+        for (int64_t jj = start; jj < ii; jj++) {
             int gid_j = (int)gaussian_ids[jj];
 
             float alpha_j = evaluar_alpha_conic_device(
@@ -725,7 +724,7 @@ __global__ void raster_backward_tiled_kernel(
         float tail_b = 0.0f;
         float T_tail = 1.0f;
 
-        for (int kk = ii + 1; kk < end; kk++) {
+        for (int64_t kk = ii + 1; kk < end; kk++) {
             int gid_k = (int)gaussian_ids[kk];
 
             float alpha_k = evaluar_alpha_conic_device(
@@ -804,7 +803,7 @@ __global__ void raster_backward_tiled_kernel(
 
 
 
-__global__ __launch_bounds__(256) void raster_forward_tiled_train_kernel(
+__global__ void raster_forward_tiled_train_kernel(
     const float* __restrict__ mu,
     const float* __restrict__ conic,
     const float* __restrict__ opacity,
@@ -834,8 +833,8 @@ __global__ __launch_bounds__(256) void raster_forward_tiled_train_kernel(
 
     int pix = fila * W + col;
 
-    int start = ranges[tile_id * 2 + 0];
-    int end = ranges[tile_id * 2 + 1];
+    int64_t start = ranges[tile_id * 2 + 0];
+    int64_t end = ranges[tile_id * 2 + 1];
 
     if (start < 0 || end <= start) {
         if (active) {
@@ -873,9 +872,8 @@ __global__ __launch_bounds__(256) void raster_forward_tiled_train_kernel(
     const float EPS_ALPHA = 1.0f / 255.0f;
     const float T_MIN = 1.0e-4f;
 
-    for (int batch_start = start; batch_start < end; batch_start += RASTER_BATCH_SIZE) {
-        int remaining = (int)(end - batch_start);
-        int batch_count = remaining < RASTER_BATCH_SIZE ? remaining : RASTER_BATCH_SIZE;
+    for (int64_t batch_start = start; batch_start < end; batch_start += RASTER_BATCH_SIZE) {
+        int batch_count = (int)min((int64_t)RASTER_BATCH_SIZE, end - batch_start);
 
         // Threads cooperate to load gaussian data once per tile.
         for (int load_id = tid; load_id < batch_count; load_id += blockDim.x) {
@@ -897,8 +895,8 @@ __global__ __launch_bounds__(256) void raster_forward_tiled_train_kernel(
         if (!done) {
             #pragma unroll 1
             for (int k = 0; k < batch_count; k++) {
-                int global_pos = batch_start + k;
-                processed = global_pos - start + 1;
+                int64_t global_pos = batch_start + k;
+                processed = (int32_t)(global_pos - start + 1);
 
                 float alpha = evaluar_alpha_values_device(
                     s_mu_f[k],
@@ -952,148 +950,7 @@ __global__ __launch_bounds__(256) void raster_forward_tiled_train_kernel(
 }
 
 
-// Fused training forward + loss.
-// Same math as raster_forward_tiled_train_kernel + loss_grad_kernel, but avoids
-// writing/reading a temporary render tensor during training loss.
-__global__ __launch_bounds__(256) void raster_forward_tiled_train_loss_kernel(
-    const float* __restrict__ mu,
-    const float* __restrict__ conic,
-    const float* __restrict__ opacity,
-    const float* __restrict__ color,
-    const int32_t* __restrict__ gaussian_ids,
-    const int32_t* __restrict__ ranges,
-    const float* __restrict__ target,
-    float* __restrict__ loss,
-    float* __restrict__ grad_render,
-    float* __restrict__ final_Ts,
-    int32_t* __restrict__ n_contrib,
-    int H,
-    int W,
-    int tile_size,
-    int tiles_x,
-    int loss_type
-) {
-    int tile_id = blockIdx.x;
-    int tid = threadIdx.x;
-
-    int local_y = tid / tile_size;
-    int local_x = tid % tile_size;
-
-    int tile_x = tile_id % tiles_x;
-    int tile_y = tile_id / tiles_x;
-
-    int fila = tile_y * tile_size + local_y;
-    int col = tile_x * tile_size + local_x;
-    bool active = (fila < H && col < W);
-    int pix = fila * W + col;
-
-    int start = ranges[tile_id * 2 + 0];
-    int end = ranges[tile_id * 2 + 1];
-
-    float pr = (float)fila + 0.5f;
-    float pc = (float)col + 0.5f;
-
-    float T = 1.0f;
-    float acc_r = 0.0f;
-    float acc_g = 0.0f;
-    float acc_b = 0.0f;
-    int32_t processed = 0;
-    bool done = !active;
-
-    __shared__ int s_gid[RASTER_BATCH_SIZE];
-    __shared__ float s_mu_f[RASTER_BATCH_SIZE];
-    __shared__ float s_mu_c[RASTER_BATCH_SIZE];
-    __shared__ float s_m00[RASTER_BATCH_SIZE];
-    __shared__ float s_m01[RASTER_BATCH_SIZE];
-    __shared__ float s_m11[RASTER_BATCH_SIZE];
-    __shared__ float s_opacity[RASTER_BATCH_SIZE];
-    __shared__ float s_color_r[RASTER_BATCH_SIZE];
-    __shared__ float s_color_g[RASTER_BATCH_SIZE];
-    __shared__ float s_color_b[RASTER_BATCH_SIZE];
-
-    const float EPS_ALPHA = 1.0f / 255.0f;
-    const float T_MIN = 1.0e-4f;
-
-    if (start >= 0 && end > start) {
-        for (int batch_start = start; batch_start < end; batch_start += RASTER_BATCH_SIZE) {
-            int remaining = (int)(end - batch_start);
-            int batch_count = remaining < RASTER_BATCH_SIZE ? remaining : RASTER_BATCH_SIZE;
-
-            for (int load_id = tid; load_id < batch_count; load_id += blockDim.x) {
-                int gid = (int)gaussian_ids[batch_start + load_id];
-                s_gid[load_id] = gid;
-                s_mu_f[load_id] = mu[gid * 2 + 0];
-                s_mu_c[load_id] = mu[gid * 2 + 1];
-                s_m00[load_id] = conic[gid * 3 + 0];
-                s_m01[load_id] = conic[gid * 3 + 1];
-                s_m11[load_id] = conic[gid * 3 + 2];
-                s_opacity[load_id] = opacity[gid];
-                s_color_r[load_id] = color[gid * 3 + 0];
-                s_color_g[load_id] = color[gid * 3 + 1];
-                s_color_b[load_id] = color[gid * 3 + 2];
-            }
-
-            __syncthreads();
-
-            if (!done) {
-                #pragma unroll 1
-                for (int k = 0; k < batch_count; k++) {
-                    int global_pos = batch_start + k;
-                    processed = global_pos - start + 1;
-
-                    float alpha = evaluar_alpha_values_device(
-                        s_mu_f[k], s_mu_c[k], s_m00[k], s_m01[k], s_m11[k], s_opacity[k],
-                        pr, pc, nullptr, nullptr, nullptr, nullptr
-                    );
-
-                    if (alpha < EPS_ALPHA) continue;
-
-                    float peso = T * alpha;
-                    acc_r += peso * s_color_r[k];
-                    acc_g += peso * s_color_g[k];
-                    acc_b += peso * s_color_b[k];
-
-                    T *= (1.0f - alpha);
-                    if (T < T_MIN) {
-                        done = true;
-                        break;
-                    }
-                }
-            }
-
-            int done_count = __syncthreads_count(done);
-            if (done_count == blockDim.x) break;
-        }
-    }
-
-    if (active) {
-        final_Ts[pix] = T;
-        n_contrib[pix] = processed;
-
-        const int pix3 = pix * 3;
-        const float inv_total = 1.0f / (float)(H * W * 3);
-        float dr = acc_r - target[pix3 + 0];
-        float dg = acc_g - target[pix3 + 1];
-        float db = acc_b - target[pix3 + 2];
-
-        if (loss_type == 0) {
-            atomicAdd(loss, fabsf(dr) * inv_total);
-            atomicAdd(loss, fabsf(dg) * inv_total);
-            atomicAdd(loss, fabsf(db) * inv_total);
-            grad_render[pix3 + 0] = (dr > 0.0f) ? inv_total : ((dr < 0.0f) ? -inv_total : 0.0f);
-            grad_render[pix3 + 1] = (dg > 0.0f) ? inv_total : ((dg < 0.0f) ? -inv_total : 0.0f);
-            grad_render[pix3 + 2] = (db > 0.0f) ? inv_total : ((db < 0.0f) ? -inv_total : 0.0f);
-        } else {
-            atomicAdd(loss, (dr * dr + dg * dg + db * db) * inv_total);
-            grad_render[pix3 + 0] = 2.0f * dr * inv_total;
-            grad_render[pix3 + 1] = 2.0f * dg * inv_total;
-            grad_render[pix3 + 2] = 2.0f * db * inv_total;
-        }
-    }
-}
-
-
-__global__ __launch_bounds__(256) void raster_backward_tiled_fast_kernel(
+__global__ void raster_backward_tiled_fast_kernel(
     const float* __restrict__ mu,
     const float* __restrict__ conic,
     const float* __restrict__ opacity,
@@ -1127,20 +984,20 @@ __global__ __launch_bounds__(256) void raster_backward_tiled_fast_kernel(
 
     int pix = fila * W + col;
 
-    int start = ranges[tile_id * 2 + 0];
-    int end = ranges[tile_id * 2 + 1];
+    int64_t start = ranges[tile_id * 2 + 0];
+    int64_t end = ranges[tile_id * 2 + 1];
 
     if (start < 0 || end <= start) {
         return;
     }
 
     int32_t processed = 0;
-    int last = start - 1;
+    int64_t last = start - 1;
 
     if (active) {
         processed = n_contrib[pix];
         if (processed > 0) {
-            last = start + processed - 1;
+            last = start + (int64_t)processed - 1;
             if (last >= end) {
                 last = end - 1;
             }
@@ -1174,10 +1031,9 @@ __global__ __launch_bounds__(256) void raster_backward_tiled_fast_kernel(
     const float EPS_ALPHA = 1.0f / 255.0f;
 
     // Iterate over the tile list back-to-front in shared-memory batches.
-    for (int batch_end = end; batch_end > start; ) {
-        int remaining = batch_end - start;
-        int batch_count = remaining < RASTER_BATCH_SIZE ? remaining : RASTER_BATCH_SIZE;
-        int batch_start = batch_end - batch_count;
+    for (int64_t batch_end = end; batch_end > start; ) {
+        int batch_count = (int)min((int64_t)RASTER_BATCH_SIZE, batch_end - start);
+        int64_t batch_start = batch_end - batch_count;
 
         // If no pixel in the tile needs this high-depth batch, skip it.
         bool needs_batch = active && (processed > 0) && (last >= batch_start);
@@ -1203,7 +1059,7 @@ __global__ __launch_bounds__(256) void raster_backward_tiled_fast_kernel(
             if (active && processed > 0) {
                 #pragma unroll 1
                 for (int k = batch_count - 1; k >= 0; k--) {
-                    int global_pos = batch_start + k;
+                    int64_t global_pos = batch_start + k;
                     if (global_pos > last) {
                         continue;
                     }
@@ -1467,7 +1323,7 @@ torch::Tensor raster_forward_tiled_cuda(
 
     int threads = tile_size * tile_size;
 
-    raster_forward_tiled_kernel<<<total_tiles, threads, 0, at::cuda::getCurrentCUDAStream()>>>(
+    raster_forward_tiled_kernel<<<total_tiles, threads>>>(
         mu.data_ptr<float>(),
         conic.data_ptr<float>(),
         opacity.data_ptr<float>(),
@@ -1577,7 +1433,7 @@ std::vector<torch::Tensor> raster_backward_tiled_cuda(
     return {grad_mu, grad_conic, grad_opacity, grad_color};
 }
 
-__global__ __launch_bounds__(256) void loss_grad_kernel(
+__global__ void loss_grad_kernel(
     const float* __restrict__ render,
     const float* __restrict__ target,
     float* __restrict__ loss,
@@ -1633,7 +1489,7 @@ std::vector<torch::Tensor> raster_forward_tiled_train_cuda(
 
     int threads = tile_size * tile_size;
 
-    raster_forward_tiled_train_kernel<<<total_tiles, threads, 0, at::cuda::getCurrentCUDAStream()>>>(
+    raster_forward_tiled_train_kernel<<<total_tiles, threads>>>(
         mu.data_ptr<float>(),
         conic.data_ptr<float>(),
         opacity.data_ptr<float>(),
@@ -1671,38 +1527,53 @@ std::vector<torch::Tensor> raster_forward_tiled_train_loss_cuda(
     auto options_f = mu.options();
     auto options_i = torch::TensorOptions().device(mu.device()).dtype(torch::kInt32);
 
-    auto loss = torch::zeros({}, options_f);
-    auto grad_render = torch::empty({H, W, 3}, options_f);
+    auto render = torch::zeros({H, W, 3}, options_f);
     auto final_Ts = torch::ones({H, W}, options_f);
     auto n_contrib = torch::zeros({H, W}, options_i);
 
     int tiles_x = (W + tile_size - 1) / tile_size;
     int tiles_y = (H + tile_size - 1) / tile_size;
     int total_tiles = tiles_x * tiles_y;
-    int threads = tile_size * tile_size;
-    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
-    raster_forward_tiled_train_loss_kernel<<<total_tiles, threads, 0, stream>>>(
+    int threads = tile_size * tile_size;
+
+    raster_forward_tiled_train_kernel<<<total_tiles, threads>>>(
         mu.data_ptr<float>(),
         conic.data_ptr<float>(),
         opacity.data_ptr<float>(),
         color.data_ptr<float>(),
         gaussian_ids.data_ptr<int32_t>(),
         ranges.data_ptr<int32_t>(),
-        target.data_ptr<float>(),
-        loss.data_ptr<float>(),
-        grad_render.data_ptr<float>(),
+        render.data_ptr<float>(),
         final_Ts.data_ptr<float>(),
         n_contrib.data_ptr<int32_t>(),
         H,
         W,
         tile_size,
-        tiles_x,
+        tiles_x
+    );
+
+    cudaError_t err1 = cudaGetLastError();
+    TORCH_CHECK(err1 == cudaSuccess, cudaGetErrorString(err1));
+
+    auto loss = torch::zeros({}, options_f);
+    auto grad_render = torch::empty_like(render);
+
+    int total = H * W * 3;
+    int block = 256;
+    int grid = (total + block - 1) / block;
+
+    loss_grad_kernel<<<grid, block>>>(
+        render.data_ptr<float>(),
+        target.data_ptr<float>(),
+        loss.data_ptr<float>(),
+        grad_render.data_ptr<float>(),
+        total,
         loss_type
     );
 
-    cudaError_t err = cudaGetLastError();
-    TORCH_CHECK(err == cudaSuccess, cudaGetErrorString(err));
+    cudaError_t err2 = cudaGetLastError();
+    TORCH_CHECK(err2 == cudaSuccess, cudaGetErrorString(err2));
 
     return {loss, grad_render, final_Ts, n_contrib};
 }
@@ -1733,7 +1604,7 @@ std::vector<torch::Tensor> raster_backward_tiled_fast_cuda(
 
     int threads = tile_size * tile_size;
 
-    raster_backward_tiled_fast_kernel<<<total_tiles, threads, 0, at::cuda::getCurrentCUDAStream()>>>(
+    raster_backward_tiled_fast_kernel<<<total_tiles, threads>>>(
         mu.data_ptr<float>(),
         conic.data_ptr<float>(),
         opacity.data_ptr<float>(),
@@ -1763,7 +1634,7 @@ std::vector<torch::Tensor> raster_backward_tiled_fast_cuda(
 // Preprocess tiled CUDA
 // ============================================================================
 
-__global__ __launch_bounds__(256) void compute_tile_counts_kernel(
+__global__ void compute_tile_counts_kernel(
     const float* __restrict__ mu,
     const float* __restrict__ scale,
     const float* __restrict__ theta,
@@ -1785,8 +1656,8 @@ __global__ __launch_bounds__(256) void compute_tile_counts_kernel(
     float sy = scale[i * 2 + 1];
     float th = theta[i];
 
-    float s, c;
-    __sincosf(th, &s, &c);
+    float c = cosf(th);
+    float s = sinf(th);
 
     // AABB conservador para una gaussiana rotada.
     float extent_fila = k_sigma * sqrtf((c * sx) * (c * sx) + (s * sy) * (s * sy));
@@ -1825,7 +1696,7 @@ __global__ __launch_bounds__(256) void compute_tile_counts_kernel(
     counts[i] = num_y * num_x;
 }
 
-__global__ __launch_bounds__(256) void duplicate_with_keys_kernel(
+__global__ void duplicate_with_keys_kernel(
     const float* __restrict__ mu,
     const float* __restrict__ scale,
     const float* __restrict__ theta,
@@ -1852,8 +1723,8 @@ __global__ __launch_bounds__(256) void duplicate_with_keys_kernel(
     float sy = scale[i * 2 + 1];
     float th = theta[i];
 
-    float s, c;
-    __sincosf(th, &s, &c);
+    float c = cosf(th);
+    float s = sinf(th);
 
     float extent_fila = k_sigma * sqrtf((c * sx) * (c * sx) + (s * sy) * (s * sy));
     float extent_col  = k_sigma * sqrtf((s * sx) * (s * sx) + (c * sy) * (c * sy));
@@ -1909,7 +1780,7 @@ __global__ __launch_bounds__(256) void duplicate_with_keys_kernel(
     }
 }
 
-__global__ __launch_bounds__(256) void identify_tile_ranges_kernel(
+__global__ void identify_tile_ranges_kernel(
     const int32_t* __restrict__ sorted_keys,
     int32_t* __restrict__ ranges,
     int total_instances,

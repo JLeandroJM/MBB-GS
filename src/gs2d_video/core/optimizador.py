@@ -46,4 +46,14 @@ def construir_optimizador(modelo, lrs):
         grupos.append({'params': [a0], 'lr': lr(f"{nombre}_a0"),   'name': f"{nombre}_a0"})
         grupos.append({'params': [hi], 'lr': lr(f"{nombre}_high"), 'name': f"{nombre}_high"})
 
+    try:
+        return torch.optim.Adam(grupos, fused=True)
+    except Exception as e:
+        print(f"[optimizador] Adam fused no disponible ({type(e).__name__}); probando foreach=True")
+
+    try:
+        return torch.optim.Adam(grupos, foreach=True)
+    except Exception as e:
+        print(f"[optimizador] Adam foreach no disponible ({type(e).__name__}); usando Adam normal")
+
     return torch.optim.Adam(grupos)

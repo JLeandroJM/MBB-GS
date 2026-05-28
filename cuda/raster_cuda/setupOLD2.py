@@ -3,41 +3,34 @@ from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 
-def _get_int_env(name: str, default: int) -> int:
-    value = os.environ.get(name, str(default))
+def _get_raster_batch_size():
+    value = os.environ.get("RASTER_BATCH_SIZE", "256")
+
     try:
         value_int = int(value)
-    except ValueError as exc:
-        raise ValueError(f"{name} debe ser un entero. Ejemplo: 128, 256, 512") from exc
+    except ValueError:
+        raise ValueError("RASTER_BATCH_SIZE debe ser un entero. Ejemplo: 128, 256, 512")
+
     if value_int <= 0:
-        raise ValueError(f"{name} debe ser mayor que 0")
+        raise ValueError("RASTER_BATCH_SIZE debe ser mayor que 0")
+
     return value_int
 
 
-raster_batch_size = _get_int_env("RASTER_BATCH_SIZE", 256)
+raster_batch_size = _get_raster_batch_size()
 
 # Build flags focused on release speed.
-# --use_fast_math can slightly change floating point results, but it matches the
-# current optimized rasterizer strategy.
+# --use_fast_math can slightly change floating point results.
 cxx_flags = ["/O2"] if os.name == "nt" else ["-O3"]
 
 nvcc_flags = [
     "-O3",
     "--use_fast_math",
     "--expt-relaxed-constexpr",
-    "-Xptxas=-O3",
     f"-DRASTER_BATCH_SIZE={raster_batch_size}",
 ]
 
-# Optional extra flags for experiments, for example:
-#   set RASTER_EXTRA_NVCC_FLAGS=--maxrregcount=96
-extra_nvcc = os.environ.get("RASTER_EXTRA_NVCC_FLAGS", "").strip()
-if extra_nvcc:
-    nvcc_flags.extend(extra_nvcc.split())
-
 print(f"[setup] RASTER_BATCH_SIZE={raster_batch_size}")
-if extra_nvcc:
-    print(f"[setup] extra nvcc flags={extra_nvcc}")
 
 setup(
     name="raster_cuda",
@@ -54,5 +47,7 @@ setup(
             },
         )
     ],
-    cmdclass={"build_ext": BuildExtension},
+    cmdclass={
+        "build_ext": BuildExtension
+    },
 )

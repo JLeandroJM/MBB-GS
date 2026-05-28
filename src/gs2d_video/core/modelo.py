@@ -53,6 +53,8 @@ class GaussianasPolinomial2D(nn.Module):
         self.base = base
         self.grados = dict(grados)
         self.device = device
+        self.log_scale_min = float(np.log(0.5))
+        self.log_scale_max = float(np.log(max(H, W)))
 
         g = torch.Generator(device='cpu').manual_seed(semilla)
 
@@ -100,6 +102,12 @@ class GaussianasPolinomial2D(nn.Module):
         depth_high_init = torch.zeros(n_gaussianas, grados['depth'])
         self.depth_a0   = nn.Parameter(depth_a0_init.to(device))
         self.depth_high = nn.Parameter(depth_high_init.to(device))
+        # --------
+        self.smooth_factors = {}
+        for nombre, grado in self.grados.items():
+            if grado > 0:
+                k_idx = torch.arange(1, grado + 1, device=device, dtype=torch.float32)
+                self.smooth_factors[nombre] = k_idx ** 2
 
 
     # ---- helpers --------------------------------------------------------
@@ -125,6 +133,16 @@ class GaussianasPolinomial2D(nn.Module):
         }
 
 
+    def parametros_temporales_items(self):
+        return (
+            ('mu',      self.mu_a0,      self.mu_high,      self.grados['mu'],      2),
+            ('opacity', self.opacity_a0, self.opacity_high, self.grados['opacity'], 1),
+            ('color',   self.color_a0,   self.color_high,   self.grados['color'],   3),
+            ('scale',   self.scale_a0,   self.scale_high,   self.grados['scale'],   2),
+            ('theta',   self.theta_a0,   self.theta_high,   self.grados['theta'],   1),
+            ('depth',   self.depth_a0,   self.depth_high,   self.grados['depth'],   1),
+        )
+
     def evaluar_en_frame(self, frame_idx, matrices_base):
         """
         Evalua todos los polinomios en el frame `frame_idx`.
@@ -140,17 +158,23 @@ class GaussianasPolinomial2D(nn.Module):
             depth   : (N,)
         """
         out = {}
-        for nombre, (a0, hi, grado, dim_p) in self.parametros_temporales().items():
+        for nombre, a0, hi, grado, dim_p in self.parametros_temporales_items():
             B = matrices_base[grado]
-            coefs = self._coefs_completos(a0, hi)                  # (N, dim_p, grado+1)
-            fila = B[frame_idx, :grado + 1]                        # (grado+1,)
-            val = (coefs * fila).sum(dim=-1)                       # (N, dim_p)
+
+            # B[frame_idx, 0] siempre es 1.0 en monomial y Chebyshev.
+            fila_high = B[frame_idx, 1:grado + 1]
+
+            if grado > 0:
+                val = a0.squeeze(-1) + (hi * fila_high).sum(dim=-1)
+            else:
+                val = a0.squeeze(-1)
+
             if dim_p == 1:
-                val = val.squeeze(-1)                              # (N,)
+                val = val.squeeze(-1)
+
             out[nombre + '_raw'] = val
 
-        return _aplicar_activaciones(out, self.H, self.W)
-
+        return _aplicar_activaciones(out, self.log_scale_min, self.log_scale_max)
 
     def evaluar_batch_completo(self, matrices_base):
         """
@@ -178,7 +202,7 @@ class GaussianasPolinomial2D(nn.Module):
                 val = val.permute(2, 0, 1).contiguous()             # (n_frames, N, dim_p)
             out[nombre + '_raw'] = val
 
-        return _aplicar_activaciones_batch(out, self.H, self.W)
+        return _aplicar_activaciones_batch(out, self.log_scale_min, self.log_scale_max)
 
 
     def numero_gausianas(self):
@@ -204,10 +228,8 @@ class GaussianasPolinomial2D(nn.Module):
 # helpers
 # ===========================================================================
 
-def _aplicar_activaciones(out, H, W):
+def _aplicar_activaciones(out, log_min, log_max):
     """Aplica activaciones para single-frame. Modifica `out` in place y lo devuelve."""
-    log_min = float(np.log(0.5))
-    log_max = float(np.log(max(H, W)))
 
     out['mu']      = out['mu_raw']
     out['theta']   = out['theta_raw']
@@ -219,10 +241,8 @@ def _aplicar_activaciones(out, H, W):
     return out
 
 
-def _aplicar_activaciones_batch(out, H, W):
+def _aplicar_activaciones_batch(out,log_min, log_max):
     """Igual que single-frame pero opera sobre tensores con eje 0 = n_frames."""
-    log_min = float(np.log(0.5))
-    log_max = float(np.log(max(H, W)))
 
     out['mu']      = out['mu_raw']
     out['theta']   = out['theta_raw']

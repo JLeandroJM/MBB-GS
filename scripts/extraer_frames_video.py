@@ -10,16 +10,16 @@ import cv2
 
 # Nombre del video dentro de:
 # tesis_2dgs_video/clips/videos/
-VIDEO_NOMBRE = "thriller.mp4"
+VIDEO_NOMBRE = "baileGANGMANG.mp4"
 
 # Cuantos frames por segundo quieres extraer
-FPS_SALIDA = 25
+FPS_SALIDA = 30
 
 # Desde que segundo empieza
-SEGUNDO_INICIO = 24
+SEGUNDO_INICIO = 5
 
 # Cuantos segundos quieres extraer
-DURACION_SEGUNDOS = 5
+DURACION_SEGUNDOS = 240
 
 # Opciones de resolucion
 # Si FORZAR_CUADRADO = False:
@@ -57,12 +57,12 @@ def obtener_raiz_proyecto():
 def obtener_rutas(video_nombre):
     raiz = obtener_raiz_proyecto()
 
-    video_path = raiz / "clips" / "videos" / video_nombre
+    video_path = raiz / "data" / "videos" / video_nombre
 
     nombre_sin_extension = Path(video_nombre).stem
     clip_name = f"{nombre_sin_extension}_clips"
 
-    carpeta_salida = raiz / "clips" / clip_name
+    carpeta_salida = raiz / "data" / "clips" / clip_name
 
     return raiz, video_path, carpeta_salida, clip_name
 

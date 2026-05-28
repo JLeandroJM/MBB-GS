@@ -179,32 +179,19 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     # ============================================================
     # Loss
     # ============================================================
-    tipo_loss = str(config.get("tipo_loss", "baseline")).lower().strip()
     lambda_dssim = float(config.get("lambda_dssim", 0.2))
 
     usar_loss_cuda = bool(config.get("usar_loss_cuda", False))
     loss_cuda_tipo = config.get("loss_cuda_tipo", "l1")
 
-    # El loss CUDA fusionado solo sirve para losses simples.
-    # Para motion/hard/edge/temporal/combo usamos PyTorch encima del render CUDA.
-    tipos_cuda_simples = ("baseline", "default", "l1", "l1_dssim")
-    if usar_loss_cuda and (tipo_loss not in tipos_cuda_simples or lambda_dssim != 0.0):
+    if usar_loss_cuda and lambda_dssim != 0.0:
         raise RuntimeError(
-            "usar_loss_cuda=true solo soporta tipo_loss baseline/l1 y lambda_dssim=0.0. "
-            "Para motion, hard, edge, temporal o DSSIM usa usar_loss_cuda=false."
+            "usar_loss_cuda=true solo soporta lambda_dssim=0.0 por ahora. "
+            "Para DSSIM usa el camino normal de PyTorch."
         )
 
     if usar_loss_cuda:
         print(f"[trainer] usando loss CUDA fusionada tipo={loss_cuda_tipo}", flush=True)
-    else:
-        print(f"[trainer] usando loss PyTorch tipo_loss={tipo_loss} lambda_dssim={lambda_dssim}", flush=True)
-
-    temporal_activo = (
-        tipo_loss in ("temporal", "motion_temporal", "combo")
-        and float(config.get("lambda_temporal", 0.0)) > 0.0
-    )
-    if temporal_activo:
-        print("[trainer] loss temporal activo: se renderiza frame previo cuando haga falta", flush=True)
 
     # ============================================================
     # Scheduler
@@ -330,10 +317,10 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
             sub_indices = idx_epoch[inicio:inicio + sub_batch_fr]
             loss_sub = None
 
-            if usar_loss_cuda:
-                # Camino viejo rapido: solo L1/MSE fusionado en CUDA.
-                for j in sub_indices:
-                    params_j = modelo.evaluar_en_frame(j, matrices_base)
+            for j in sub_indices:
+                params_j = modelo.evaluar_en_frame(j, matrices_base)
+
+                if usar_loss_cuda:
                     l_j = loss_frame_cuda(
                         params_j,
                         frames[j],
@@ -341,58 +328,22 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
                         W,
                         config,
                     )
-
-                    # Promedio sobre los frames realmente usados en este epoch.
-                    l_j = l_j / n_usados
-                    loss_sub = l_j if loss_sub is None else (loss_sub + l_j)
-
-            else:
-                # Camino flexible: render CUDA + loss PyTorch configurable.
-                # Primero renderizamos los frames actuales del sub-batch y los cacheamos.
-                # Esto permite reutilizar render[j-1] en temporal loss si cae dentro
-                # del mismo sub-batch, evitando trabajo extra.
-                render_cache = {}
-
-                for j in sub_indices:
-                    params_j = modelo.evaluar_en_frame(j, matrices_base)
-                    render_cache[j] = _rasterizar_segun_config(
+                else:
+                    render_j = _rasterizar_segun_config(
                         params_j,
                         H,
                         W,
                         config,
                     )
-
-                for j in sub_indices:
-                    prev_render = None
-                    prev_target = None
-
-                    if temporal_activo and j > 0:
-                        prev_target = frames[j - 1]
-
-                        if (j - 1) in render_cache:
-                            prev_render = render_cache[j - 1]
-                        else:
-                            params_prev = modelo.evaluar_en_frame(j - 1, matrices_base)
-                            prev_render = _rasterizar_segun_config(
-                                params_prev,
-                                H,
-                                W,
-                                config,
-                            )
-
                     l_j = loss_render_frame(
-                        render_cache[j],
+                        render_j,
                         frames[j],
-                        config,
-                        frames_all=frames,
-                        frame_idx=j,
-                        prev_render=prev_render,
-                        prev_target=prev_target,
+                        lambda_dssim=lambda_dssim,
                     )
 
-                    # Promedio sobre los frames realmente usados en este epoch.
-                    l_j = l_j / n_usados
-                    loss_sub = l_j if loss_sub is None else (loss_sub + l_j)
+                # Promedio sobre los frames realmente usados en este epoch.
+                l_j = l_j / n_usados
+                loss_sub = l_j if loss_sub is None else (loss_sub + l_j)
 
             if loss_sub is not None:
                 loss_sub.backward()

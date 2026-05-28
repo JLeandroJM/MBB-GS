@@ -1,0 +1,10 @@
+python scripts\train.py --config configs\config_newloss.json
+
+PARA EL CUDA:
+set DISTUTILS_USE_SDK=1
+set MSSdk=1
+
+python setup.py build_ext --inplace
+
+
+python scripts\frames_a_video.py --frames outputs\runs\loss_night_t1\SCENE1_clips\frames_rasterizados --salida outputs\runs\loss_night_t1\SCENE1_clips\video_reconstruido.mp4 --fps 27
