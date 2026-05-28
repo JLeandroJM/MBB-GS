@@ -311,12 +311,26 @@ def main():
     guardar_curva(historial["losses_smooth"], f"loss_smoothness - {nombre_exp}",
                   "loss smooth", os.path.join(salida, "loss_smooth_curve.png"), xlabel="epoch")
 
+    # Curvas adicionales para experimentos max-aware (mean RAW por epoch y MAX RAW por epoch).
+    raw_mean = historial.get("losses_render_raw_mean")
+    raw_max = historial.get("losses_render_raw_max")
+    if raw_mean is not None and raw_max is not None:
+        guardar_curva(raw_mean, f"loss_r_mean (raw) - {nombre_exp}",
+                      "loss render mean raw", os.path.join(salida, "loss_raw_mean_curve.png"), xlabel="epoch")
+        guardar_curva(raw_max, f"loss_r_max (peor frame del epoch) - {nombre_exp}",
+                      "loss render max raw", os.path.join(salida, "loss_raw_max_curve.png"), xlabel="epoch")
+
     with open(os.path.join(salida, "log_entrenamiento.csv"), "w", newline="") as f:
         w_csv = csv.writer(f)
-        w_csv.writerow(["epoch", "loss_render", "loss_smooth", "tiempo_seg"])
-        for i, (lr_, ls_, ts_) in enumerate(zip(
-                historial["losses_render"], historial["losses_smooth"], historial["tiempos_por_epoch"])):
-            w_csv.writerow([i + 1, f"{lr_:.6f}", f"{ls_:.6f}", f"{ts_:.3f}"])
+        w_csv.writerow(["epoch", "loss_render", "loss_render_raw_mean", "loss_render_raw_max", "loss_smooth", "tiempo_seg"])
+        n_epochs_log = len(historial["losses_render"])
+        for i in range(n_epochs_log):
+            lr_ = historial["losses_render"][i]
+            rm_ = raw_mean[i] if raw_mean is not None else lr_
+            rx_ = raw_max[i] if raw_max is not None else lr_
+            ls_ = historial["losses_smooth"][i]
+            ts_ = historial["tiempos_por_epoch"][i]
+            w_csv.writerow([i + 1, f"{lr_:.6f}", f"{rm_:.6f}", f"{rx_:.6f}", f"{ls_:.6f}", f"{ts_:.3f}"])
 
     torch.save({
         "state_dict_coefs": modelo.state_dict_coefs(),

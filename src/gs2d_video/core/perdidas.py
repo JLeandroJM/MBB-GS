@@ -11,11 +11,26 @@ Modos disponibles con config["tipo_loss"]:
   - motion_temporal : motion + MSE opcional + temporal opcional + DSSIM opcional
   - combo           : activa solo las lambdas > 0
 
+Knobs universales que afectan TODOS los tipo_loss (orthogonales):
+  - exponente_pixel : float (default 1.0). p-norm sobre los errores absolutos de pixel.
+                      p=1  -> mean(|R-T|)        (actual, sin cambio)
+                      p=2  -> mean(|R-T|^2)      (estilo MSE)
+                      p=4  -> mean(|R-T|^4)      (penaliza fuerte pixeles malos)
+                      p=10 -> casi max(|R-T|)    (solo el pixel peor pesa)
+                      Da gradiente proporcional a |R-T|^(p-1): "hard pixel mining"
+                      continuo. Castiga regiones con error grande mucho mas que el promedio.
+  - usar_pnorm_root : bool (default false). Si true, devuelve (mean(diff^p))^(1/p)
+                      preservando la escala original. Para Adam el efecto es minimo.
+  - usar_max_pixel  : bool (default false). Si true, ignora exponente_pixel y usa max
+                      puro sobre los pixeles. UNICAMENTE el peor pixel recibe gradiente.
+                      Inestable salvo en early training; preferir exponente_pixel alto.
+
 Importante:
 - Si una lambda esta en 0, esa parte NO se calcula.
 - Este archivo funciona con el raster CUDA actual si usar_loss_cuda=false.
 - Para motion real, trainer.py debe pasar frames_all y frame_idx/frame_indices.
 - Para temporal real por frame, trainer.py debe pasar prev_render y prev_target.
+- exponente_pixel se aplica SOLO al termino L1/diff_abs. MSE/DSSIM/edge/temporal no se tocan.
 """
 import torch
 import torch.nn.functional as F
@@ -117,6 +132,64 @@ def _weighted_mean(diff_abs, weight=None):
     weight = weight.expand_as(diff_abs)
 
     return (diff_abs * weight).sum() / weight.sum().clamp_min(_EPS)
+
+
+def _aggregate_pixel(diff_abs, weight, config):
+    """
+    Agregacion p-norm/max de los errores absolutos de pixel dentro de un batch.
+
+    Args:
+        diff_abs : (B,H,W,3) o (H,W,3) -- abs(R - T).
+        weight   : None o (B,H,W,1)/(B,H,W) -- peso por pixel (motion/hard/etc).
+        config   : dict de config (usado para leer exponente_pixel, usar_max_pixel, usar_pnorm_root).
+
+    Returns:
+        scalar tensor con el loss agregado.
+
+    Comportamiento:
+        - usar_max_pixel=true   -> max(diff_abs * weight). Solo el peor pixel.
+        - exponente_pixel == 1  -> equivalente a _weighted_mean(diff_abs, weight).
+        - exponente_pixel  > 1  -> mean(diff_abs^p * weight) -- "hard pixel mining" continuo.
+                                   Si usar_pnorm_root=true se aplica (.)^(1/p) al resultado.
+
+    Notas:
+        - La opcion 'max puro' es brutal: solo el peor pixel recibe gradiente.
+          Util como experimento puntual, no como entrenamiento estable.
+        - Para p alto (>= 8) el comportamiento se acerca asintoticamente al max,
+          pero preservando algo de gradiente para los demas pixeles -- mas estable.
+    """
+    if bool(config.get("usar_max_pixel", False)):
+        if weight is None:
+            return diff_abs.max()
+        if weight.dim() == 3:
+            weight = weight.unsqueeze(-1)
+        weight = weight.to(device=diff_abs.device, dtype=diff_abs.dtype)
+        weight = weight.expand_as(diff_abs)
+        return (diff_abs * weight).max()
+
+    exponente = float(config.get("exponente_pixel", 1.0))
+
+    if exponente == 1.0:
+        return _weighted_mean(diff_abs, weight)
+
+    # p-norm: aplica power per-pixel, luego promedio (eventualmente ponderado).
+    # clamp_min para evitar 0^(p-1) cuando p no es entero (gradiente NaN en x=0).
+    base = diff_abs.clamp_min(_EPS) if exponente != int(exponente) else diff_abs
+    pow_diff = base ** exponente
+
+    if weight is None:
+        result = pow_diff.mean()
+    else:
+        if weight.dim() == 3:
+            weight = weight.unsqueeze(-1)
+        weight = weight.to(device=pow_diff.device, dtype=pow_diff.dtype)
+        weight = weight.expand_as(pow_diff)
+        result = (pow_diff * weight).sum() / weight.sum().clamp_min(_EPS)
+
+    if bool(config.get("usar_pnorm_root", False)):
+        result = result.clamp_min(_EPS) ** (1.0 / exponente)
+
+    return result
 
 
 def _normalizar_indices(frame_indices, device):
@@ -333,11 +406,11 @@ def loss_render_batch(
     diff_abs = torch.abs(render_batch - frames_gt)
 
     if tipo in ("baseline", "default", "l1", "l1_dssim"):
-        loss = diff_abs.mean()
+        loss = _aggregate_pixel(diff_abs, None, config)
         return _mezclar_dssim(loss, render_batch, frames_gt, config)
 
     if tipo == "l1_mse":
-        loss = diff_abs.mean()
+        loss = _aggregate_pixel(diff_abs, None, config)
 
         lambda_mse = _get_float(config, "lambda_mse", 0.0)
         if lambda_mse > 0.0:
@@ -347,16 +420,16 @@ def loss_render_batch(
 
     if tipo == "motion":
         w_motion = _motion_weight(frames_gt, config, frames_all=frames_all, frame_indices=frame_indices)
-        loss = _weighted_mean(diff_abs, w_motion)
+        loss = _aggregate_pixel(diff_abs, w_motion, config)
         return _mezclar_dssim(loss, render_batch, frames_gt, config)
 
     if tipo == "hard":
         w_hard = _hard_weight(diff_abs, config)
-        loss = _weighted_mean(diff_abs, w_hard)
+        loss = _aggregate_pixel(diff_abs, w_hard, config)
         return _mezclar_dssim(loss, render_batch, frames_gt, config)
 
     if tipo == "edge":
-        loss = diff_abs.mean()
+        loss = _aggregate_pixel(diff_abs, None, config)
 
         lambda_edge = _get_float(config, "lambda_edge", 0.0)
         if lambda_edge > 0.0:
@@ -365,7 +438,7 @@ def loss_render_batch(
         return _mezclar_dssim(loss, render_batch, frames_gt, config)
 
     if tipo == "temporal":
-        loss = diff_abs.mean()
+        loss = _aggregate_pixel(diff_abs, None, config)
 
         lambda_temporal = _get_float(config, "lambda_temporal", 0.0)
         if lambda_temporal > 0.0:
@@ -380,7 +453,7 @@ def loss_render_batch(
 
     if tipo == "motion_temporal":
         w_motion = _motion_weight(frames_gt, config, frames_all=frames_all, frame_indices=frame_indices)
-        loss = _weighted_mean(diff_abs, w_motion)
+        loss = _aggregate_pixel(diff_abs, w_motion, config)
 
         lambda_mse = _get_float(config, "lambda_mse", 0.0)
         if lambda_mse > 0.0:
@@ -407,7 +480,7 @@ def loss_render_batch(
             w_hard = _hard_weight(diff_abs, config)
             weight = w_hard if weight is None else weight * w_hard
 
-        loss = _weighted_mean(diff_abs, weight)
+        loss = _aggregate_pixel(diff_abs, weight, config)
 
         lambda_mse = _get_float(config, "lambda_mse", 0.0)
         if lambda_mse > 0.0:

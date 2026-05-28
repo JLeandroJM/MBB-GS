@@ -185,6 +185,17 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     usar_loss_cuda = bool(config.get("usar_loss_cuda", False))
     loss_cuda_tipo = config.get("loss_cuda_tipo", "l1")
 
+    # ----- Knobs "max-aware" pedidos por el profesor -----
+    # exponente_frame: p-norm sobre los losses de frame.
+    #   p=1  -> mean(L_j)        (actual)
+    #   p=2  -> mean(L_j^2)      (penaliza frames malos cuadraticamente)
+    #   p=4+ -> casi max(L_j)    (solo los peores aportan gradiente significativo)
+    # usar_max_frame: si true, dentro de cada sub_batch usa max(L_j) en vez de sum.
+    #   Combinado con sub_batch_frames bajo (1-4) y muchos sub-batches, el efecto
+    #   global es "el peor de cada chunk recibe gradiente, los demas no".
+    exponente_frame = float(config.get("exponente_frame", 1.0))
+    usar_max_frame = bool(config.get("usar_max_frame", False))
+
     # El loss CUDA fusionado solo sirve para losses simples.
     # Para motion/hard/edge/temporal/combo usamos PyTorch encima del render CUDA.
     tipos_cuda_simples = ("baseline", "default", "l1", "l1_dssim")
@@ -198,6 +209,13 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         print(f"[trainer] usando loss CUDA fusionada tipo={loss_cuda_tipo}", flush=True)
     else:
         print(f"[trainer] usando loss PyTorch tipo_loss={tipo_loss} lambda_dssim={lambda_dssim}", flush=True)
+
+    if exponente_frame != 1.0 or usar_max_frame:
+        print(
+            f"[trainer] agregacion frames: exponente_frame={exponente_frame}  "
+            f"usar_max_frame={usar_max_frame}",
+            flush=True,
+        )
 
     temporal_activo = (
         tipo_loss in ("temporal", "motion_temporal", "combo")
@@ -269,6 +287,8 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     # Historial
     # ============================================================
     losses_render = []
+    losses_render_raw_mean = []
+    losses_render_raw_max = []
     losses_smooth = []
     losses_total = []
     if usar_scheduler_lento and len(losses_render) > scheduler_lento_window:
@@ -321,7 +341,11 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         
         n_usados = len(idx_epoch)
 
+        # Trackers para reporte: la "sum efectiva" entra al gradiente; las "raw"
+        # son para mostrar metricas interpretables del peor frame y el promedio.
         loss_render_epoch_total = torch.zeros((), device=frames.device)
+        loss_render_epoch_raw_sum = torch.zeros((), device=frames.device)
+        loss_render_epoch_raw_max = torch.zeros((), device=frames.device)
 
         # --------------------------------------------------------
         # Render + loss con gradient accumulation
@@ -329,6 +353,32 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         for inicio in range(0, n_usados, sub_batch_fr):
             sub_indices = idx_epoch[inicio:inicio + sub_batch_fr]
             loss_sub = None
+
+            def _acumular(l_j):
+                """
+                Aplica exponente_frame y agrega l_j al sub-batch loss.
+                Tambien actualiza los trackers raw (mean / max) para reporte.
+                """
+                nonlocal loss_sub, loss_render_epoch_raw_sum, loss_render_epoch_raw_max
+
+                l_j_det = l_j.detach()
+                loss_render_epoch_raw_sum = loss_render_epoch_raw_sum + l_j_det
+                loss_render_epoch_raw_max = torch.maximum(loss_render_epoch_raw_max, l_j_det)
+
+                if exponente_frame != 1.0:
+                    l_j_eff = l_j.clamp_min(1e-12) ** exponente_frame
+                else:
+                    l_j_eff = l_j
+
+                l_j_norm = l_j_eff / n_usados
+
+                if loss_sub is None:
+                    loss_sub = l_j_norm
+                elif usar_max_frame:
+                    # Solo el peor frame del sub-batch contribuye al gradiente.
+                    loss_sub = torch.maximum(loss_sub, l_j_norm)
+                else:
+                    loss_sub = loss_sub + l_j_norm
 
             if usar_loss_cuda:
                 # Camino viejo rapido: solo L1/MSE fusionado en CUDA.
@@ -341,10 +391,7 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
                         W,
                         config,
                     )
-
-                    # Promedio sobre los frames realmente usados en este epoch.
-                    l_j = l_j / n_usados
-                    loss_sub = l_j if loss_sub is None else (loss_sub + l_j)
+                    _acumular(l_j)
 
             else:
                 # Camino flexible: render CUDA + loss PyTorch configurable.
@@ -389,16 +436,19 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
                         prev_render=prev_render,
                         prev_target=prev_target,
                     )
-
-                    # Promedio sobre los frames realmente usados en este epoch.
-                    l_j = l_j / n_usados
-                    loss_sub = l_j if loss_sub is None else (loss_sub + l_j)
+                    _acumular(l_j)
 
             if loss_sub is not None:
                 loss_sub.backward()
                 loss_render_epoch_total = loss_render_epoch_total + loss_sub.detach() * n_usados
 
+        # loss_render_avg = promedio del loss EFECTIVO (con exponente_frame).
+        # Si exponente_frame=1 y usar_max_frame=false, coincide con la version anterior.
         loss_render_avg = float((loss_render_epoch_total / max(1, n_usados)).item())
+        # loss_render_raw_mean / raw_max = metricas interpretables del L_j RAW
+        # (sin aplicar exponente_frame). Sirven para comparar con runs anteriores.
+        loss_render_raw_mean = float((loss_render_epoch_raw_sum / max(1, n_usados)).item())
+        loss_render_raw_max = float(loss_render_epoch_raw_max.item())
         # --------------------------------------------------------
         # Smoothness
         # --------------------------------------------------------
@@ -424,6 +474,8 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         # Scheduler despues del optimizer.step.
 
         losses_render.append(loss_render_reportado)
+        losses_render_raw_mean.append(loss_render_raw_mean)
+        losses_render_raw_max.append(loss_render_raw_max)
         losses_smooth.append(loss_smooth_reportado)
         losses_total.append(loss_total_reportado)
 
@@ -481,6 +533,8 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
             print(
                 f"  epoch {epoch + 1:4d}/{n_epochs}  "
                 f"loss_r={loss_render_reportado:.5f}  "
+                f"loss_r_mean={loss_render_raw_mean:.5f}  "
+                f"loss_r_max={loss_render_raw_max:.5f}  "
                 f"loss_s={loss_smooth_reportado:.3e}  "
                 f"PSNR_avg={psnr_avg:.2f}  "
                 f"t_epoch={tiempos[-1]:.1f}s  "
@@ -518,6 +572,8 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
                 print(
                     f"  epoch {epoch + 1:4d}/{n_epochs}  "
                     f"loss_r={loss_render_reportado:.5f}  "
+                    f"loss_r_mean={loss_render_raw_mean:.5f}  "
+                    f"loss_r_max={loss_render_raw_max:.5f}  "
                     f"loss_s={loss_smooth_reportado:.3e}  "
                     f"t_epoch={tiempos[-1]:.1f}s  "
                     f"eta={eta / 60:.1f}min"
@@ -545,6 +601,8 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
 
     return {
         "losses_render": losses_render,
+        "losses_render_raw_mean": losses_render_raw_mean,
+        "losses_render_raw_max": losses_render_raw_max,
         "losses_smooth": losses_smooth,
         "losses_total": losses_total,
         "psnrs_chk": psnrs_chk,
