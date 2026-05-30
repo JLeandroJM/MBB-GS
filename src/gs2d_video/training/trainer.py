@@ -2,11 +2,27 @@
 Loop de entrenamiento epoch-based con gradient accumulation.
 
 Cambios de rendimiento:
+- Soporta frames en CPU/RAM para reducir VRAM.
+- Solo mueve a GPU el frame que se usa en cada iteracion.
 - Flags para desactivar PSNR durante training.
 - Flags para no guardar checkpoints intermedios ni verificacion visual.
 - Verificacion visual usa el mismo rasterizador del config si se activa.
 - Opcion frames_por_epoch para debug/entrenamiento rapido con subset temporal.
+- Opcion usar_muestreo_temporal_por_bloques para muestreo estratificado.
+
+
+CAMBIOS 
+1. _frame_a_device ya no esta dentro de MuestreadorTemporalPorBloques.
+2. frames[j] se convierte a GPU solo cuando se necesita.
+3. motion/combo reciben prev_target sin pasar frames_all completo.
+4. temporal recibe prev_render y prev_target cuando hace falta.
+5. loss CUDA tambien usa target_j en GPU.
+6. PSNR durante entrenamiento funciona aunque frames esten en CPU.
+7. Se elimino el bloque de scheduler que estaba fuera del loop y usaba epoch antes de existir.
+
+
 """
+
 import os
 import time
 
@@ -15,13 +31,39 @@ import torch
 from gs2d_video.core.perdidas import loss_render_frame, loss_smoothness
 from gs2d_video.render.renderer import render_frame, loss_frame_cuda
 
-### NUEVA IDEA
+
+# ============================================================
+# Helper: mover solo el frame necesario a GPU
+# ============================================================
+
+def _frame_a_device(frame, device):
+    """
+    Convierte un frame CPU/GPU a float32 en el device indicado.
+
+    Casos soportados:
+    - CPU uint8: pasa a GPU y normaliza a [0, 1].
+    - CPU float32/float16: pasa a GPU como float32.
+    - CUDA float32: lo devuelve tal cual.
+    """
+    if frame.device.type == device.type and frame.dtype == torch.float32:
+        return frame
+
+    if frame.dtype == torch.uint8:
+        return frame.to(device=device, non_blocking=True).float().div_(255.0)
+
+    return frame.to(device=device, dtype=torch.float32, non_blocking=True)
+
+
+# ============================================================
+# Muestreo temporal por bloques
+# ============================================================
+
 class MuestreadorTemporalPorBloques:
     """
     Muestreador temporal estratificado sin reemplazo.
 
-    Divide el video en bloques consecutivos de tamano `frames_por_bloque`.
-    En cada epoch toma `muestras_por_bloque` frames de cada bloque.
+    Divide el video en bloques consecutivos de tamano frames_por_bloque.
+    En cada epoch toma muestras_por_bloque frames de cada bloque.
     Dentro de cada bloque, no repite frames hasta agotar el bloque completo.
     """
 
@@ -84,6 +126,9 @@ class MuestreadorTemporalPorBloques:
         return [indices_epoch[i] for i in perm]
 
 
+# ============================================================
+# Utilidades
+# ============================================================
 
 def _psnr(a, b):
     mse = torch.mean((a - b) ** 2)
@@ -95,19 +140,34 @@ def _psnr(a, b):
 def _rasterizar_segun_config(params_j, H, W, config):
     return render_frame(params_j, H, W, config)
 
+
 @torch.no_grad()
 def _evaluar_psnr_promedio(modelo, frames, matrices_base, config):
-    """PSNR promedio. Usa el rasterizador indicado por config."""
+    """
+    PSNR promedio usando el rasterizador indicado por config.
+
+    Compatible con:
+    - frames en CUDA float32
+    - frames en CPU uint8/float
+    """
     n_frames, H, W, _ = frames.shape
+    device_modelo = modelo.mu_a0.device
+
     suma = 0.0
+
     for j in range(n_frames):
         params_j = modelo.evaluar_en_frame(j, matrices_base)
         r = _rasterizar_segun_config(params_j, H, W, config).clamp(0, 1)
-        suma += _psnr(r, frames[j])
+
+        target_j = _frame_a_device(frames[j], device_modelo)
+        suma += _psnr(r, target_j)
+
+        del params_j, r, target_j
+
     return suma / n_frames
 
 
-def _indices_epoch(n_frames, frames_por_epoch, device):
+def _indices_epoch(n_frames, frames_por_epoch):
     """
     Devuelve los indices de frames a usar en un epoch.
     Si frames_por_epoch es None, usa todos los frames.
@@ -119,9 +179,12 @@ def _indices_epoch(n_frames, frames_por_epoch, device):
     if k <= 0 or k >= n_frames:
         return list(range(n_frames))
 
-    # randperm en CPU para que .tolist() sea barato y no sincronice tanto.
     return torch.randperm(n_frames, device="cpu")[:k].tolist()
 
+
+# ============================================================
+# Entrenamiento principal
+# ============================================================
 
 def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpeta_salida=None):
     """
@@ -134,12 +197,20 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         frames_por_epoch: int | null
         usar_loss_cuda: bool
         loss_cuda_tipo: "l1" | "mse"
-        usar_scheduler: bool
-        scheduler_factor: float
-        scheduler_patience: int
-        scheduler_min_lr: float
+        usar_scheduler_lento: bool
+        scheduler_lento_window: int
+        scheduler_lento_min_delta: float
+        scheduler_lento_factor: float
+        scheduler_lento_min_lr: float
+        scheduler_lento_cooldown: int
+
+        usar_muestreo_temporal_por_bloques: bool
+        fps_grupo_temporal: int
+        frames_por_grupo_temporal: int
     """
+
     n_frames, H, W, _ = frames.shape
+    device_modelo = modelo.mu_a0.device
 
     # ============================================================
     # Config general
@@ -156,6 +227,7 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     usar_muestreo_temporal = bool(config.get("usar_muestreo_temporal_por_bloques", False))
 
     muestreador_temporal = None
+
     if usar_muestreo_temporal:
         frames_por_bloque = int(config.get("fps_grupo_temporal", 30))
         muestras_por_bloque = int(config.get("frames_por_grupo_temporal", 3))
@@ -187,18 +259,17 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
 
     # ----- Knobs "max-aware" pedidos por el profesor -----
     # exponente_frame: p-norm sobre los losses de frame.
-    #   p=1  -> mean(L_j)        (actual)
-    #   p=2  -> mean(L_j^2)      (penaliza frames malos cuadraticamente)
-    #   p=4+ -> casi max(L_j)    (solo los peores aportan gradiente significativo)
+    #   p=1  -> mean(L_j)
+    #   p=2  -> mean(L_j^2)
+    #   p=4+ -> casi max(L_j)
     # usar_max_frame: si true, dentro de cada sub_batch usa max(L_j) en vez de sum.
-    #   Combinado con sub_batch_frames bajo (1-4) y muchos sub-batches, el efecto
-    #   global es "el peor de cada chunk recibe gradiente, los demas no".
     exponente_frame = float(config.get("exponente_frame", 1.0))
     usar_max_frame = bool(config.get("usar_max_frame", False))
 
     # El loss CUDA fusionado solo sirve para losses simples.
     # Para motion/hard/edge/temporal/combo usamos PyTorch encima del render CUDA.
     tipos_cuda_simples = ("baseline", "default", "l1", "l1_dssim")
+
     if usar_loss_cuda and (tipo_loss not in tipos_cuda_simples or lambda_dssim != 0.0):
         raise RuntimeError(
             "usar_loss_cuda=true solo soporta tipo_loss baseline/l1 y lambda_dssim=0.0. "
@@ -208,7 +279,11 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     if usar_loss_cuda:
         print(f"[trainer] usando loss CUDA fusionada tipo={loss_cuda_tipo}", flush=True)
     else:
-        print(f"[trainer] usando loss PyTorch tipo_loss={tipo_loss} lambda_dssim={lambda_dssim}", flush=True)
+        print(
+            f"[trainer] usando loss PyTorch tipo_loss={tipo_loss} "
+            f"lambda_dssim={lambda_dssim}",
+            flush=True,
+        )
 
     if exponente_frame != 1.0 or usar_max_frame:
         print(
@@ -221,6 +296,14 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         tipo_loss in ("temporal", "motion_temporal", "combo")
         and float(config.get("lambda_temporal", 0.0)) > 0.0
     )
+
+    motion_activo = (
+        tipo_loss in ("motion", "motion_temporal", "combo")
+        and float(config.get("lambda_motion", 0.0)) > 0.0
+    )
+
+    necesita_prev_target = temporal_activo or motion_activo
+
     if temporal_activo:
         print("[trainer] loss temporal activo: se renderiza frame previo cuando haga falta", flush=True)
 
@@ -234,7 +317,6 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     scheduler_lento_min_lr = float(config.get("scheduler_lento_min_lr", 1e-6))
     scheduler_lento_cooldown = int(config.get("scheduler_lento_cooldown", scheduler_lento_window))
 
-  
     ultimo_epoch_reduce_lr = -10**9
 
     if usar_scheduler_lento:
@@ -243,11 +325,10 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
             f"(window={scheduler_lento_window}, "
             f"min_delta={scheduler_lento_min_delta}, "
             f"factor={scheduler_lento_factor}, "
-            f"min_lr={scheduler_lento_min_lr})",
+            f"min_lr={scheduler_lento_min_lr}, "
+            f"cooldown={scheduler_lento_cooldown})",
             flush=True,
         )
-
-        
 
     # ============================================================
     # Renderer CUDA
@@ -291,28 +372,6 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     losses_render_raw_max = []
     losses_smooth = []
     losses_total = []
-    if usar_scheduler_lento and len(losses_render) > scheduler_lento_window:
-        loss_antes = losses_render[-scheduler_lento_window - 1]
-        loss_ahora = losses_render[-1]
-        mejora_ventana = loss_antes - loss_ahora
-
-        paso_cooldown = (epoch + 1) - ultimo_epoch_reduce_lr >= scheduler_lento_cooldown
-
-        if mejora_ventana < scheduler_lento_min_delta and paso_cooldown:
-            for grupo in optimizer.param_groups:
-                lr_actual = grupo["lr"]
-                nuevo_lr = max(lr_actual * scheduler_lento_factor, scheduler_lento_min_lr)
-                grupo["lr"] = nuevo_lr
-
-            ultimo_epoch_reduce_lr = epoch + 1
-
-            lrs_actuales = [g["lr"] for g in optimizer.param_groups]
-            print(
-                f"[trainer] scheduler lento redujo LR en epoch {epoch + 1}: "
-                f"mejora_ventana={mejora_ventana:.6f} < {scheduler_lento_min_delta:.6f} | "
-                f"lr_min={min(lrs_actuales):.2e} lr_max={max(lrs_actuales):.2e}",
-                flush=True,
-            )
     psnrs_chk = []
     tiempos = []
 
@@ -320,9 +379,6 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     mejor_loss = float("inf")
     t_inicio = time.time()
 
-    # ============================================================
-    # Helper para imprimir LR
-    # ============================================================
     def _lr_info():
         lrs_actuales = [g["lr"] for g in optimizer.param_groups]
         return f"  lr_min={min(lrs_actuales):.2e} lr_max={max(lrs_actuales):.2e}"
@@ -337,15 +393,17 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         if muestreador_temporal is not None:
             idx_epoch = muestreador_temporal.siguiente_epoch()
         else:
-            idx_epoch = _indices_epoch(n_frames, frames_por_epoch, frames.device)        
-        
+            idx_epoch = _indices_epoch(n_frames, frames_por_epoch)
+
         n_usados = len(idx_epoch)
 
-        # Trackers para reporte: la "sum efectiva" entra al gradiente; las "raw"
-        # son para mostrar metricas interpretables del peor frame y el promedio.
-        loss_render_epoch_total = torch.zeros((), device=frames.device)
-        loss_render_epoch_raw_sum = torch.zeros((), device=frames.device)
-        loss_render_epoch_raw_max = torch.zeros((), device=frames.device)
+        # Trackers para reporte:
+        # - total: loss efectivo que entra al gradiente.
+        # - raw_*: metricas interpretables del loss por frame sin exponente.
+        # Importante: usar device_modelo, porque frames puede estar en CPU uint8.
+        loss_render_epoch_total = torch.zeros((), device=device_modelo)
+        loss_render_epoch_raw_sum = torch.zeros((), device=device_modelo)
+        loss_render_epoch_raw_max = torch.zeros((), device=device_modelo)
 
         # --------------------------------------------------------
         # Render + loss con gradient accumulation
@@ -381,25 +439,28 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
                     loss_sub = loss_sub + l_j_norm
 
             if usar_loss_cuda:
-                # Camino viejo rapido: solo L1/MSE fusionado en CUDA.
+                # Camino rapido: solo L1/MSE fusionado en CUDA.
                 for j in sub_indices:
                     params_j = modelo.evaluar_en_frame(j, matrices_base)
+                    target_j = _frame_a_device(frames[j], device_modelo)
+
                     l_j = loss_frame_cuda(
                         params_j,
-                        frames[j],
+                        target_j,
                         H,
                         W,
                         config,
                     )
                     _acumular(l_j)
 
+                    del params_j, target_j
+
             else:
                 # Camino flexible: render CUDA + loss PyTorch configurable.
-                # Primero renderizamos los frames actuales del sub-batch y los cacheamos.
-                # Esto permite reutilizar render[j-1] en temporal loss si cae dentro
-                # del mismo sub-batch, evitando trabajo extra.
                 render_cache = {}
+                target_cache = {}
 
+                # Renderizar frames actuales del sub-batch.
                 for j in sub_indices:
                     params_j = modelo.evaluar_en_frame(j, matrices_base)
                     render_cache[j] = _rasterizar_segun_config(
@@ -408,14 +469,22 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
                         W,
                         config,
                     )
+                    target_cache[j] = _frame_a_device(frames[j], device_modelo)
 
+                    del params_j
+
+                # Calcular loss por frame.
                 for j in sub_indices:
                     prev_render = None
                     prev_target = None
 
-                    if temporal_activo and j > 0:
-                        prev_target = frames[j - 1]
+                    if necesita_prev_target and j > 0:
+                        if (j - 1) in target_cache:
+                            prev_target = target_cache[j - 1]
+                        else:
+                            prev_target = _frame_a_device(frames[j - 1], device_modelo)
 
+                    if temporal_activo and j > 0:
                         if (j - 1) in render_cache:
                             prev_render = render_cache[j - 1]
                         else:
@@ -426,12 +495,13 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
                                 W,
                                 config,
                             )
+                            del params_prev
 
                     l_j = loss_render_frame(
                         render_cache[j],
-                        frames[j],
+                        target_cache[j],
                         config,
-                        frames_all=frames,
+                        frames_all=None,
                         frame_idx=j,
                         prev_render=prev_render,
                         prev_target=prev_target,
@@ -442,11 +512,17 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
                 loss_sub.backward()
                 loss_render_epoch_total = loss_render_epoch_total + loss_sub.detach() * n_usados
 
+            # Liberar referencias del sub-batch.
+            if not usar_loss_cuda:
+                del render_cache
+                del target_cache
+
         # loss_render_avg = promedio del loss EFECTIVO (con exponente_frame).
         # Si exponente_frame=1 y usar_max_frame=false, coincide con la version anterior.
         loss_render_avg = float((loss_render_epoch_total / max(1, n_usados)).item())
+
         # loss_render_raw_mean / raw_max = metricas interpretables del L_j RAW
-        # (sin aplicar exponente_frame). Sirven para comparar con runs anteriores.
+        # sin aplicar exponente_frame.
         loss_render_raw_mean = float((loss_render_epoch_raw_sum / max(1, n_usados)).item())
         loss_render_raw_max = float(loss_render_epoch_raw_max.item())
         # --------------------------------------------------------
@@ -455,7 +531,6 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         loss_smooth = loss_smoothness(modelo, pesos_por_param=pesos_smooth)
         loss_smooth_escalado = beta * loss_smooth
 
-        # Para beta_smoothness=0, smoothness puede no tener gradiente util.
         if loss_smooth_escalado.requires_grad and beta != 0.0:
             loss_smooth_escalado.backward()
 
@@ -471,14 +546,15 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         loss_smooth_reportado = float(loss_smooth.detach().item())
         loss_total_reportado = loss_render_reportado + beta * loss_smooth_reportado
 
-        # Scheduler despues del optimizer.step.
-
         losses_render.append(loss_render_reportado)
         losses_render_raw_mean.append(loss_render_raw_mean)
         losses_render_raw_max.append(loss_render_raw_max)
         losses_smooth.append(loss_smooth_reportado)
         losses_total.append(loss_total_reportado)
 
+        # --------------------------------------------------------
+        # Scheduler lento despues del optimizer.step
+        # --------------------------------------------------------
         if usar_scheduler_lento and len(losses_render) > scheduler_lento_window:
             loss_antes = losses_render[-scheduler_lento_window - 1]
             loss_ahora = losses_render[-1]
@@ -501,7 +577,7 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
                     f"lr_min={min(lrs_actuales):.2e} lr_max={max(lrs_actuales):.2e}",
                     flush=True,
                 )
-                
+
         tiempos.append(time.time() - t_epoch)
 
         # ========================================================
@@ -610,9 +686,13 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         "tiempo_total": time.time() - t_inicio,
     }
 
+
 @torch.no_grad()
 def _guardar_verificacion_visual(modelo, frames, matrices_base, carpeta, epoch, config):
-    """Renderiza primer y ultimo frame usando el rasterizador del config."""
+    """
+    Renderiza primer y ultimo frame usando el rasterizador del config.
+    Compatible con frames en CPU o GPU.
+    """
     from PIL import Image
     import numpy as np
 
