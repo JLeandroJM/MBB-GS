@@ -19,7 +19,7 @@ FPS_SALIDA = 30
 SEGUNDO_INICIO = 5
 
 # Cuantos segundos quieres extraer
-DURACION_SEGUNDOS = 240
+DURACION_SEGUNDOS = 60
 
 # Opciones de resolucion
 # Si FORZAR_CUADRADO = False:
@@ -29,10 +29,10 @@ DURACION_SEGUNDOS = 240
 # Si FORZAR_CUADRADO = True:
 #   recorta el centro y redimensiona a TAMANO_CUADRADO x TAMANO_CUADRADO.
 FORZAR_CUADRADO = False
-TAMANO_CUADRADO = 256*2
+TAMANO_CUADRADO = 256*5
 
 # Solo se usa si FORZAR_CUADRADO = False
-ALTO_SALIDA = 144*2
+ALTO_SALIDA = 144*5
 
 # Si True, borra frames viejos de la carpeta de salida antes de generar nuevos
 LIMPIAR_SALIDA = True

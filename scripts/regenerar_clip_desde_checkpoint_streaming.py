@@ -1,0 +1,294 @@
+"""
+Regenera todos los frames desde un checkpoint, en modo streaming.
+
+Objetivo:
+- No apila todos los renders en GPU.
+- Guarda cada frame PNG apenas se renderiza.
+- Opcionalmente genera comparaciones original | render | diff.
+- Opcionalmente llama a scripts/frames_a_video.py para crear MP4.
+"""
+
+import argparse
+import csv
+import subprocess
+import sys
+from pathlib import Path
+
+import numpy as np
+import torch
+from PIL import Image
+
+RAIZ = Path(__file__).resolve().parents[1]
+SRC = RAIZ / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from gs2d_video.core.bases import construir_matriz
+from gs2d_video.core.modelo import GaussianasPolinomial2D
+from gs2d_video.render.renderer import render_frame
+
+
+def elegir_device(device_str):
+    if device_str == "cuda":
+        if not torch.cuda.is_available():
+            raise RuntimeError("cuda no disponible")
+        return torch.device("cuda")
+    if device_str == "cpu":
+        return torch.device("cpu")
+    return torch.device(device_str)
+
+
+def listar_frames_clip(carpeta_clip):
+    if not carpeta_clip.is_dir():
+        return []
+    return sorted(
+        p for p in carpeta_clip.iterdir()
+        if p.name.startswith("frame_") and p.suffix.lower() == ".png"
+    )
+
+
+def inferir_n_gaussianas(sd, config):
+    for key in ["mu_a0", "color_a0", "opacity_a0", "scale_a0", "theta_a0", "depth_a0"]:
+        value = sd.get(key)
+        if torch.is_tensor(value) and value.ndim >= 1:
+            return int(value.shape[0])
+    return int(config["n_gaussianas_inicial"])
+
+
+def cargar_checkpoint_y_modelo(ruta_checkpoint, device, clip_override=None):
+    ckpt = torch.load(str(ruta_checkpoint), map_location="cpu")
+    if "config" not in ckpt or "state_dict_coefs" not in ckpt:
+        raise RuntimeError("El checkpoint no tiene config o state_dict_coefs")
+
+    config = dict(ckpt["config"])
+    if clip_override is not None:
+        config["clip"] = clip_override
+
+    sd = ckpt["state_dict_coefs"]
+    grados = dict(sd.get("grados", config["grados"]))
+    base = sd.get("base", config["base"])
+    n_gaussianas = int(sd.get("N", inferir_n_gaussianas(sd, config)))
+    H = int(sd.get("H"))
+    W = int(sd.get("W"))
+    n_frames = int(sd.get("n_frames", config.get("max_frames")))
+
+    modelo = GaussianasPolinomial2D(
+        n_gaussianas=n_gaussianas,
+        n_frames=n_frames,
+        grados=grados,
+        base=base,
+        H=H,
+        W=W,
+        device=device,
+        escala_inicial_px=float(config.get("escala_inicial_px", 5.0)),
+        frame_0_imagen=None,
+        semilla=int(config.get("seed", 42)),
+    )
+
+    with torch.no_grad():
+        for nombre in ["mu", "opacity", "color", "scale", "theta", "depth"]:
+            getattr(modelo, f"{nombre}_a0").copy_(sd[f"{nombre}_a0"].to(device))
+            getattr(modelo, f"{nombre}_high").copy_(sd[f"{nombre}_high"].to(device))
+
+    modelo.eval()
+    return modelo, config, grados, base, n_frames, H, W, n_gaussianas
+
+
+def imagen_render_a_uint8(render):
+    render = torch.nan_to_num(render, nan=0.0, posinf=1.0, neginf=0.0)
+    render = render.clamp(0, 1)
+    return (render.detach().cpu().numpy() * 255).astype(np.uint8)
+
+
+def guardar_comparacion(render_uint8, ruta_original, ruta_salida, factor_diff=5.0):
+    target = Image.open(ruta_original).convert("RGB")
+    target_np = np.asarray(target, dtype=np.float32) / 255.0
+    pred_np = render_uint8.astype(np.float32) / 255.0
+    if target_np.shape != pred_np.shape:
+        raise RuntimeError(
+            f"Shape original y render no coinciden: original={target_np.shape}, render={pred_np.shape}"
+        )
+    diff = np.clip(np.abs(target_np - pred_np) * float(factor_diff), 0, 1)
+    concat = np.concatenate([target_np, pred_np, diff], axis=1)
+    Image.fromarray((concat * 255).astype(np.uint8)).save(ruta_salida)
+
+
+def calcular_metricas_simples(render_uint8, ruta_original):
+    target = Image.open(ruta_original).convert("RGB")
+    target_np = np.asarray(target, dtype=np.float32) / 255.0
+    pred_np = render_uint8.astype(np.float32) / 255.0
+    if target_np.shape != pred_np.shape:
+        return None
+    mse = float(np.mean((pred_np - target_np) ** 2))
+    mae = float(np.mean(np.abs(pred_np - target_np)))
+    psnr = float("inf") if mse <= 0 else float(-10.0 * np.log10(mse))
+    return mse, mae, psnr
+
+
+@torch.no_grad()
+def regenerar_frames_streaming(
+    checkpoint,
+    salida,
+    clip_override=None,
+    device_str=None,
+    inicio=0,
+    fin=None,
+    guardar_comparaciones=False,
+    factor_diff=5.0,
+    crear_video=False,
+    fps=27,
+    limpiar_cache_cada=25,
+):
+    checkpoint = Path(checkpoint).resolve()
+    salida = Path(salida).resolve()
+    salida.mkdir(parents=True, exist_ok=True)
+
+    device_str = device_str or "cuda"
+    device = elegir_device(device_str)
+
+    modelo, config, grados, base, n_frames_ckpt, H, W, n_gaussianas = cargar_checkpoint_y_modelo(
+        checkpoint, device, clip_override=clip_override
+    )
+
+    clip = config["clip"]
+    carpeta_clip = RAIZ / "data" / "clips" / clip
+    frames_originales = listar_frames_clip(carpeta_clip)
+
+    if frames_originales:
+        n_frames_clip = len(frames_originales)
+        n_frames = min(n_frames_ckpt, n_frames_clip)
+    else:
+        n_frames_clip = 0
+        n_frames = n_frames_ckpt
+
+    inicio = int(inicio)
+    fin = n_frames if fin is None else min(int(fin), n_frames)
+    if inicio < 0 or inicio >= n_frames:
+        raise ValueError(f"inicio fuera de rango: {inicio}, n_frames={n_frames}")
+    if fin <= inicio:
+        raise ValueError(f"fin debe ser mayor que inicio. inicio={inicio}, fin={fin}")
+
+    print("=== regenerar desde checkpoint ===", flush=True)
+    print(f"checkpoint : {checkpoint}", flush=True)
+    print(f"salida     : {salida}", flush=True)
+    print(f"clip       : {clip}", flush=True)
+    print(f"carpeta clip: {carpeta_clip}", flush=True)
+    print(f"device     : {device}", flush=True)
+    print(f"base       : {base}", flush=True)
+    print(f"N          : {n_gaussianas}", flush=True)
+    print(f"frames ckpt: {n_frames_ckpt}", flush=True)
+    print(f"frames clip: {n_frames_clip}", flush=True)
+    print(f"render     : {inicio}..{fin - 1}", flush=True)
+    print(f"resolucion : {H}x{W}", flush=True)
+    print(f"grados     : {grados}", flush=True)
+
+    grados_distintos = sorted(set(grados.values()))
+    matrices_base = {
+        g: construir_matriz(base, n_frames_ckpt, g, device=device, dtype=torch.float32)
+        for g in grados_distintos
+    }
+
+    carpeta_comp = salida.parent / "comparaciones_streaming"
+    if guardar_comparaciones:
+        carpeta_comp.mkdir(parents=True, exist_ok=True)
+
+    ruta_csv = salida.parent / "metricas_streaming_simples.csv"
+    psnr_vals, mae_vals, mse_vals = [], [], []
+
+    with open(ruta_csv, "w", newline="", encoding="utf-8") as fcsv:
+        writer = csv.writer(fcsv)
+        writer.writerow(["frame", "mse", "mae", "psnr"])
+
+        for j in range(inicio, fin):
+            params_j = modelo.evaluar_en_frame(j, matrices_base)
+            render = render_frame(params_j, H, W, config)
+            img = imagen_render_a_uint8(render)
+
+            ruta_frame = salida / f"frame_{j:04d}.png"
+            Image.fromarray(img).save(ruta_frame)
+
+            if frames_originales and j < len(frames_originales):
+                met = calcular_metricas_simples(img, frames_originales[j])
+                if met is not None:
+                    mse, mae, psnr = met
+                    mse_vals.append(mse)
+                    mae_vals.append(mae)
+                    psnr_vals.append(psnr)
+                    writer.writerow([j, f"{mse:.8f}", f"{mae:.8f}", f"{psnr:.4f}"])
+                else:
+                    writer.writerow([j, "", "", ""])
+
+                if guardar_comparaciones:
+                    ruta_comp = carpeta_comp / f"comparacion_{j:04d}.png"
+                    guardar_comparacion(img, frames_originales[j], ruta_comp, factor_diff=factor_diff)
+            else:
+                writer.writerow([j, "", "", ""])
+
+            del params_j, render
+            if device.type == "cuda" and limpiar_cache_cada > 0 and ((j + 1) % limpiar_cache_cada == 0):
+                torch.cuda.empty_cache()
+
+            if (j == inicio) or ((j + 1 - inicio) % 10 == 0) or (j == fin - 1):
+                msg = f"render {j + 1}/{fin}"
+                if psnr_vals:
+                    msg += f"  PSNR_prom={float(np.mean(psnr_vals)):.2f}"
+                print(msg, flush=True)
+
+    print("=== listo frames ===", flush=True)
+    print(f"frames guardados en: {salida}", flush=True)
+    print(f"metricas simples en: {ruta_csv}", flush=True)
+    if psnr_vals:
+        print(
+            f"PSNR promedio simple={float(np.mean(psnr_vals)):.2f}  "
+            f"MAE promedio={float(np.mean(mae_vals)):.6f}",
+            flush=True,
+        )
+
+    if crear_video:
+        ruta_video = salida.parent / "video_reconstruido.mp4"
+        script_video = RAIZ / "scripts" / "frames_a_video.py"
+        cmd = [
+            sys.executable,
+            str(script_video),
+            "--frames", str(salida),
+            "--salida", str(ruta_video),
+            "--fps", str(int(fps)),
+        ]
+        print("=== creando video ===", flush=True)
+        print(" ".join(cmd), flush=True)
+        subprocess.run(cmd, cwd=str(RAIZ), check=True)
+        print(f"video guardado en: {ruta_video}", flush=True)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--checkpoint", required=True)
+    parser.add_argument("--salida", required=True)
+    parser.add_argument("--clip", default=None)
+    parser.add_argument("--device", default=None)
+    parser.add_argument("--inicio", type=int, default=0)
+    parser.add_argument("--fin", type=int, default=None)
+    parser.add_argument("--crear_video", action="store_true")
+    parser.add_argument("--fps", type=int, default=27)
+    parser.add_argument("--comparaciones", action="store_true")
+    parser.add_argument("--factor_diff", type=float, default=5.0)
+    parser.add_argument("--limpiar_cache_cada", type=int, default=25)
+    args = parser.parse_args()
+
+    regenerar_frames_streaming(
+        checkpoint=args.checkpoint,
+        salida=args.salida,
+        clip_override=args.clip,
+        device_str=args.device,
+        inicio=args.inicio,
+        fin=args.fin,
+        guardar_comparaciones=args.comparaciones,
+        factor_diff=args.factor_diff,
+        crear_video=args.crear_video,
+        fps=args.fps,
+        limpiar_cache_cada=args.limpiar_cache_cada,
+    )
+
+
+if __name__ == "__main__":
+    main()

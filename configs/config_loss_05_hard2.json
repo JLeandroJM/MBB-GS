@@ -1,9 +1,9 @@
 {
   "_comentario": "se actualizo el cuda y archivos python",
 
-  "nombre_experimento": "loss_night_t9",
+  "nombre_experimento": "loss_night_t5HD",
   "base": "chebyshev",
-  "clip": "SCENE1_clips",
+  "clip": "baileGANGMANG_clips",
 
   "video_mp4": null,
   "n_frames_extraer": null,
@@ -15,12 +15,12 @@
   "device": "cuda",
   "seed": 42,
 
-  "n_gaussianas_inicial": 15000,
+  "n_gaussianas_inicial": 40000,
   "inicializar_color_desde_frame0": true,
   "escala_inicial_px": 2.5,
 
   "grados": {
-    "mu": 90,
+    "mu": 100,
     "opacity": 80,
     "color": 28,
     "scale": 12,
@@ -43,24 +43,15 @@
     "depth_high": 0.0001
   },
 
-  "n_epochs": 1100,
+  "n_epochs": 1200,
   "checkpoint_cada_n_epochs": 100,
-  "sub_batch_frames": 6,
+  "sub_batch_frames": 3,
 
-    "tipo_loss": "combo",
+   "tipo_loss": "hard",
     "lambda_dssim": 0.25,
-
-    "lambda_hard": 0.5,
+    "lambda_hard": 1.0,
     "hard_clip": 5.0,
 
-    "lambda_motion": 1.0,
-    "motion_umbral": 0.01,
-    "motion_clip": 5.0,
-    "motion_blur": 3,
-
-    "lambda_mse": 0.0,
-    "lambda_edge": 0.0,
-    "lambda_temporal": 0.0,
 
   "usar_loss_cuda": false,
 

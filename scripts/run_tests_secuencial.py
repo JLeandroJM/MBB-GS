@@ -19,7 +19,7 @@ from datetime import datetime
 #    "configs/config_loss_07_temporal_loss.json",
 #]
 
-
+'''
 CONFIGS = [
     "configs/config_loss_01_baseline.json",
     "configs/config_loss_02_motion.json",
@@ -27,6 +27,11 @@ CONFIGS = [
     "configs/config_loss_05_hard.json",
     "configs/config_loss_08_hard_05.json",
     "configs/config_loss_09_combo_hard_motion.json",
+]'''
+
+CONFIGS = [
+    #"configs/config_loss_05_hard2.json",
+    "configs/config_loss_09_combo_hard_motion2.json",
 ]
 
 # Si True: si un test falla, sigue con el siguiente.
