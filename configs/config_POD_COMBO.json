@@ -51,7 +51,7 @@
   "checkpoint_cada_n_epochs": 300,
   "sub_batch_frames": 4,
 
-  "usar_muestreo_temporal_por_bloques": true,
+  "usar_muestreo_temporal_por_bloques": false,
   "fps_grupo_temporal": 30,
   "frames_por_grupo_temporal": 5,
 
