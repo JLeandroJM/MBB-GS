@@ -209,11 +209,17 @@ def _normalizar_indices(frame_indices, device):
     return idx
 
 
-def _motion_weight(frames_gt, config, frames_all=None, frame_indices=None):
+def _motion_weight(frames_gt, config, frames_all=None, frame_indices=None, prev_target_batch=None):
     """
     Peso por movimiento calculado desde GT.
-    Con frames_all + frame_indices usa frame t contra t-1 real.
-    Si no se pasa, usa diferencia interna del batch como fallback.
+
+    Prioridad:
+    1. frames_all + frame_indices: usa frame t contra t-1 real.
+    2. prev_target_batch: usa el target actual contra el target previo ya movido al device.
+    3. fallback: usa diferencias internas del batch.
+
+    Esto arregla el caso frame-by-frame: antes, con B=1 y frames_all=None,
+    lambda_motion no aportaba porque el mapa de movimiento quedaba en cero.
     """
     lambda_motion = _get_float(config, "lambda_motion", 0.0)
     if lambda_motion <= 0.0:
@@ -223,16 +229,40 @@ def _motion_weight(frames_gt, config, frames_all=None, frame_indices=None):
     device = frames_gt.device
 
     if frames_all is not None and frame_indices is not None:
-        idx = _normalizar_indices(frame_indices, device)
-        prev_idx = torch.clamp(idx - 1, min=0)
+        # Indexamos en el device real de frames_all para soportar CPU uint8,
+        # GPU uint8 o GPU float32. Luego movemos al device del loss.
+        idx_src = _normalizar_indices(frame_indices, frames_all.device)
+        prev_idx = torch.clamp(idx_src - 1, min=0)
 
-        curr = frames_all[idx]
-        prev = frames_all[prev_idx]
+        curr = frames_all[idx_src].to(device=device, non_blocking=True)
+        prev = frames_all[prev_idx].to(device=device, non_blocking=True)
+
+        if curr.dtype == torch.uint8:
+            curr = curr.float().div_(255.0)
+        else:
+            curr = curr.to(dtype=frames_gt.dtype)
+
+        if prev.dtype == torch.uint8:
+            prev = prev.float().div_(255.0)
+        else:
+            prev = prev.to(dtype=frames_gt.dtype)
+
         motion = torch.abs(curr - prev).mean(dim=-1, keepdim=True)
 
         # El frame 0 no tiene frame previo real.
+        idx = idx_src.to(device=device)
         es_frame0 = (idx == 0).view(-1, 1, 1, 1)
         motion = torch.where(es_frame0, torch.zeros_like(motion), motion)
+
+    elif prev_target_batch is not None:
+        prev_target_batch = prev_target_batch.to(device=device, dtype=frames_gt.dtype)
+        motion = torch.abs(frames_gt - prev_target_batch).mean(dim=-1, keepdim=True)
+
+        if frame_indices is not None:
+            idx = _normalizar_indices(frame_indices, device)
+            es_frame0 = (idx == 0).view(-1, 1, 1, 1)
+            motion = torch.where(es_frame0, torch.zeros_like(motion), motion)
+
     else:
         motion = torch.zeros(
             (B, frames_gt.shape[1], frames_gt.shape[2], 1),
@@ -419,7 +449,13 @@ def loss_render_batch(
         return _mezclar_dssim(loss, render_batch, frames_gt, config)
 
     if tipo == "motion":
-        w_motion = _motion_weight(frames_gt, config, frames_all=frames_all, frame_indices=frame_indices)
+        w_motion = _motion_weight(
+            frames_gt,
+            config,
+            frames_all=frames_all,
+            frame_indices=frame_indices,
+            prev_target_batch=prev_target_batch,
+        )
         loss = _aggregate_pixel(diff_abs, w_motion, config)
         return _mezclar_dssim(loss, render_batch, frames_gt, config)
 
@@ -452,7 +488,13 @@ def loss_render_batch(
         return _mezclar_dssim(loss, render_batch, frames_gt, config)
 
     if tipo == "motion_temporal":
-        w_motion = _motion_weight(frames_gt, config, frames_all=frames_all, frame_indices=frame_indices)
+        w_motion = _motion_weight(
+            frames_gt,
+            config,
+            frames_all=frames_all,
+            frame_indices=frame_indices,
+            prev_target_batch=prev_target_batch,
+        )
         loss = _aggregate_pixel(diff_abs, w_motion, config)
 
         lambda_mse = _get_float(config, "lambda_mse", 0.0)
@@ -474,7 +516,13 @@ def loss_render_batch(
         weight = None
 
         if _get_float(config, "lambda_motion", 0.0) > 0.0:
-            weight = _motion_weight(frames_gt, config, frames_all=frames_all, frame_indices=frame_indices)
+            weight = _motion_weight(
+                frames_gt,
+                config,
+                frames_all=frames_all,
+                frame_indices=frame_indices,
+                prev_target_batch=prev_target_batch,
+            )
 
         if _get_float(config, "lambda_hard", 0.0) > 0.0:
             w_hard = _hard_weight(diff_abs, config)

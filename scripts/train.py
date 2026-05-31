@@ -3,6 +3,7 @@ Entry point de entrenamiento.
 
 Version corregida para entrenamientos grandes:
 - Opcion frames_en_cpu=true para mantener los frames en RAM como uint8.
+- Opcion frames_en_gpu_uint8=true para mantener los frames en VRAM como uint8.
 - Solo se mueve a GPU el frame_0 cuando se usa para inicializar color.
 - Guarda checkpoint_final.pt inmediatamente despues del entrenamiento.
 - Evita renderizar el clip completo dentro de train.py cuando frames_en_cpu=true
@@ -147,7 +148,7 @@ def guardar_gif_desde_render(render_batch, frames, ruta_gif, paso=2, factor_diff
 # Carga de frames
 # ============================================================
 
-def cargar_clip(carpeta_clip, device, max_frames=None, frames_en_cpu=False):
+def cargar_clip(carpeta_clip, device, max_frames=None, frames_en_cpu=False, frames_en_gpu_uint8=False):
     archivos = sorted(
         f for f in os.listdir(carpeta_clip)
         if f.startswith("frame_") and f.endswith(".png")
@@ -172,6 +173,9 @@ def cargar_clip(carpeta_clip, device, max_frames=None, frames_en_cpu=False):
 
     frames = torch.from_numpy(data)
 
+    if frames_en_cpu and frames_en_gpu_uint8:
+        raise ValueError("No uses frames_en_cpu=true y frames_en_gpu_uint8=true al mismo tiempo")
+
     if frames_en_cpu:
         # Se queda en RAM como uint8.
         # Esto reduce fuerte la VRAM para videos grandes.
@@ -181,8 +185,18 @@ def cargar_clip(carpeta_clip, device, max_frames=None, frames_en_cpu=False):
             pass
         return frames
 
+    if frames_en_gpu_uint8:
+        # Modo rapido para GPUs con VRAM grande: todo el clip queda en VRAM
+        # como uint8. En cada iteracion se convierte solo el frame usado a
+        # float32 [0, 1], evitando transferencias CPU->GPU por frame.
+        try:
+            frames = frames.pin_memory()
+        except RuntimeError:
+            pass
+        return frames.to(device=device, dtype=torch.uint8, non_blocking=True)
+
     # Modo antiguo: todo el video en GPU como float32.
-    return frames.to(device=device, dtype=torch.float32).div_(255.0)
+    return frames.to(device=device, dtype=torch.float32, non_blocking=True).div_(255.0)
 
 
 def elegir_device(device_str):
@@ -296,9 +310,14 @@ def main():
     guardar_frames = bool(config.get("guardar_frames_rasterizados", True))
 
     frames_en_cpu = bool(config.get("frames_en_cpu", False))
+    frames_en_gpu_uint8 = bool(config.get("frames_en_gpu_uint8", False))
+
+    if frames_en_cpu and frames_en_gpu_uint8:
+        raise ValueError("No uses frames_en_cpu=true y frames_en_gpu_uint8=true al mismo tiempo")
 
     # Por defecto, si frames_en_cpu=true evitamos renderizar todo el clip dentro de train.py.
-    # Para forzarlo manualmente: "evitar_render_completo_en_train": false
+    # Si frames_en_gpu_uint8=true, se permite render/metricas porque asumimos VRAM grande.
+    # Para forzarlo manualmente: "evitar_render_completo_en_train": true/false
     evitar_render_completo = bool(config.get("evitar_render_completo_en_train", frames_en_cpu))
 
     seed = int(config.get("seed", 42))
@@ -346,17 +365,19 @@ def main():
         device,
         max_frames=config.get("max_frames"),
         frames_en_cpu=frames_en_cpu,
+        frames_en_gpu_uint8=frames_en_gpu_uint8,
     )
 
     n_frames, H, W, _ = frames.shape
     print(f"clip={clip}  n_frames={n_frames}  resolucion={H}x{W}", flush=True)
 
+    mb = frames.numel() * frames.element_size() / (1024 ** 2)
     if frames_en_cpu:
-        mb = frames.numel() * frames.element_size() / (1024 ** 2)
         print(f"[train] frames_en_cpu=true: frames en RAM como {frames.dtype}, aprox {mb:.1f} MiB", flush=True)
+    elif frames_en_gpu_uint8:
+        print(f"[train] frames_en_gpu_uint8=true: frames en {frames.device} como {frames.dtype}, aprox {mb:.1f} MiB", flush=True)
     else:
-        mb = frames.numel() * frames.element_size() / (1024 ** 2)
-        print(f"[train] frames_en_cpu=false: frames en {frames.device} como {frames.dtype}, aprox {mb:.1f} MiB", flush=True)
+        print(f"[train] frames en {frames.device} como {frames.dtype}, aprox {mb:.1f} MiB", flush=True)
 
     if evitar_render_completo:
         if calcular_metricas or guardar_frames or guardar_gif or calcular_compresion:
