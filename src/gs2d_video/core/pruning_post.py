@@ -4,17 +4,16 @@ ticket): eliminar las gaussianas que nunca pasan el umbral en ningun frame.
 """
 import torch
 
-from gs2d_video.core.bases import construir_matriz
+from gs2d_video.core.bases import construir_matriz_chebyshev
 
 
 @torch.no_grad()
-def calcular_contribucion_maxima(modelo, base, n_samples=200):
+def calcular_contribucion_maxima(modelo, n_samples=200):
     """
     max_t sigma(opacity_i(t)) muestreado en n_samples t en [0, n_frames-1].
 
     Args:
         modelo : GaussianasPolinomial2D
-        base   : 'chebyshev' o 'monomial' (debe coincidir con la del modelo)
         n_samples : densidad temporal del muestreo
 
     Returns: tensor (N,) en CPU con las contribuciones.
@@ -23,7 +22,7 @@ def calcular_contribucion_maxima(modelo, base, n_samples=200):
     device   = modelo.opacity_a0.device
     dtype    = modelo.opacity_a0.dtype
 
-    B = construir_matriz(base, n_samples, grado_op, device=device, dtype=dtype)
+    B = construir_matriz_chebyshev(n_samples, grado_op, device=device, dtype=dtype)
     coefs = torch.cat([modelo.opacity_a0, modelo.opacity_high], dim=-1)   # (N, 1, grado+1)
 
     # (N, 1, grado+1) @ (grado+1, n_samples) = (N, 1, n_samples)
@@ -35,14 +34,14 @@ def calcular_contribucion_maxima(modelo, base, n_samples=200):
 
 
 @torch.no_grad()
-def prunear_post(modelo, base, umbral=0.05, n_samples=200):
+def prunear_post(modelo, umbral=0.05, n_samples=200):
     """
     Filtra in-place todas las nn.Parameters por mascara (contrib >= umbral).
     Devuelve (n_original, n_final, indices_eliminados).
     """
     from torch import nn
 
-    contribs = calcular_contribucion_maxima(modelo, base, n_samples=n_samples)
+    contribs = calcular_contribucion_maxima(modelo, n_samples=n_samples)
     mantener = contribs >= umbral
 
     n_original = int(mantener.shape[0])

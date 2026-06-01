@@ -1,3 +1,34 @@
+"""
+Ejecucion secuencial de la ablacion sistematica de loss en 3 fases.
+
+Estructura:
+- Fase 1: ablacion del tipo de loss intra-frame (Nivel 1).
+- Fase 2: ablacion de agregacion entre frames (Nivel 2),
+          con el ganador de Fase 1 fijo.
+- Fase 3: ablacion de agregacion a nivel pixel (Nivel 0),
+          con el ganador de Fase 2 fijo.
+
+IMPORTANTE - como pasar de una fase a la siguiente:
+    Las Fases 2 y 3 estan PRE-CONFIGURADAS asumiendo ciertos ganadores
+    (ver comentarios "GANADOR ASUMIDO"). Si los experimentos de la fase
+    anterior dan otro ganador, hay que editar los configs de las fases
+    posteriores ANTES de correrlas.
+
+    - Si gana otro tipo_loss en Fase 1 (no baseline):
+        editar 'tipo_loss' y sus lambdas en TODOS los configs de
+        configs/fase2_*.json y configs/fase3_*.json.
+
+    - Si gana otro exponente_frame en Fase 2 (no 2.0):
+        editar 'exponente_frame' en TODOS los configs de
+        configs/fase3_*.json.
+
+Uso:
+    python scripts/run_tests_secuencial.py
+
+Por defecto corre la fase activa (ver variable FASE_ACTIVA abajo). El
+nombre del experimento se infiere del stem del archivo de config
+(p.ej. 'fase1_baseline.json' -> nombre_experimento='fase1_baseline').
+"""
 from pathlib import Path
 import subprocess
 import sys
@@ -6,33 +37,46 @@ from datetime import datetime
 
 
 # ============================================================
-# CONFIGS A EJECUTAR
+# FASES Y CONFIGS
 # ============================================================
 
-#CONFIGS = [
-#    "configs/config_loss_01_baseline.json",
-#    "configs/config_loss_02_motion.json",
-#    "configs/config_loss_03_motion_temporal.json",
-#    "configs/config_loss_04_l1_mse.json",
-#    "configs/config_loss_05_hard.json",
-#    "configs/config_loss_06_edge.json",
-#    "configs/config_loss_07_temporal_loss.json",
-#]
-
-'''
-CONFIGS = [
-    "configs/config_loss_01_baseline.json",
-    "configs/config_loss_02_motion.json",
-    "configs/config_loss_03_motion_temporal.json",
-    "configs/config_loss_05_hard.json",
-    "configs/config_loss_08_hard_05.json",
-    "configs/config_loss_09_combo_hard_motion.json",
-]'''
-
-CONFIGS = [
-    #"configs/config_loss_05_hard2.json",
-    "configs/config_loss_09_combo_hard_motion2.json",
+FASE_1 = [
+    "configs/fase1_baseline.json",   # L1 + DSSIM (referencia, esperado favorito)
+    "configs/fase1_l1_mse.json",     # L1 + MSE + DSSIM
+    "configs/fase1_edge.json",       # L1 + Sobel edge + DSSIM
+    "configs/fase1_temporal.json",   # L1 + |dR - dGT| + DSSIM
+    "configs/fase1_motion.json",     # L1 ponderado por motion del GT + DSSIM
+    "configs/fase1_combo.json",      # motion x hard + DSSIM
 ]
+
+# GANADOR ASUMIDO FASE 1: 'baseline'.
+# Si gana otro, hay que editar 'tipo_loss' y sus lambdas en TODOS los
+# configs de Fase 2 y Fase 3 antes de correrlos.
+FASE_2 = [
+    "configs/fase2_qframe1.json",    # exponente_frame=1 (referencia, = ganador F1)
+    "configs/fase2_qframe2.json",    # exponente_frame=2
+    "configs/fase2_qframe4.json",    # exponente_frame=4
+    "configs/fase2_qframe8.json",    # exponente_frame=8
+    "configs/fase2_maxframe.json",   # usar_max_frame=true (max puro)
+]
+
+# GANADOR ASUMIDO FASE 2: exponente_frame=2.
+# Si gana otro, editar 'exponente_frame' en TODOS los configs de Fase 3.
+FASE_3 = [
+    "configs/fase3_qpixel1.json",    # exponente_pixel=1 (referencia, = ganador F2)
+    "configs/fase3_qpixel2.json",    # exponente_pixel=2
+    "configs/fase3_qpixel4.json",    # exponente_pixel=4
+]
+
+FASES = {
+    "fase1": FASE_1,
+    "fase2": FASE_2,
+    "fase3": FASE_3,
+    "todas": FASE_1 + FASE_2 + FASE_3,
+}
+
+# Cambia esto para correr otra fase. Tambien acepta primer argv.
+FASE_ACTIVA = "fase1"
 
 # Si True: si un test falla, sigue con el siguiente.
 # Si False: si un test falla, se detiene todo.
@@ -43,23 +87,32 @@ def main():
     raiz = Path(__file__).resolve().parents[1]
     script_train = raiz / "scripts" / "train.py"
 
+    fase_seleccionada = sys.argv[1] if len(sys.argv) > 1 else FASE_ACTIVA
+
+    if fase_seleccionada not in FASES:
+        print(f"ERROR: fase '{fase_seleccionada}' no existe. Opciones: {list(FASES.keys())}")
+        sys.exit(2)
+
+    configs = FASES[fase_seleccionada]
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    carpeta_logs = raiz / "outputs" / "batch_tests" / f"batch_{timestamp}"
+    carpeta_logs = raiz / "outputs" / "_batch_logs" / f"batch_{fase_seleccionada}_{timestamp}"
     carpeta_logs.mkdir(parents=True, exist_ok=True)
 
     resumen = []
 
     print("============================================================")
-    print(" EJECUCION SECUENCIAL DE TESTS")
+    print(f" EJECUCION SECUENCIAL: {fase_seleccionada}")
     print("============================================================")
     print(f"Raiz proyecto : {raiz}")
     print(f"Python usado  : {sys.executable}")
     print(f"Logs en       : {carpeta_logs}")
+    print(f"Configs       : {len(configs)}")
     print("")
 
     inicio_total = time.time()
 
-    for idx, config_rel in enumerate(CONFIGS, start=1):
+    for idx, config_rel in enumerate(configs, start=1):
         config_path = raiz / config_rel
 
         if not config_path.exists():
@@ -70,19 +123,24 @@ def main():
                 break
             continue
 
-        nombre_log = f"{idx:02d}_{config_path.stem}.log"
+        # El nombre del experimento viene del stem del config.
+        # Asi cada salida queda en outputs/<stem>/.
+        nombre_exp = config_path.stem
+
+        nombre_log = f"{idx:02d}_{nombre_exp}.log"
         ruta_log = carpeta_logs / nombre_log
 
         print("------------------------------------------------------------")
-        print(f"[{idx}/{len(CONFIGS)}] Ejecutando: {config_rel}")
+        print(f"[{idx}/{len(configs)}] Ejecutando: {config_rel}")
+        print(f"Nombre experimento: {nombre_exp}")
         print(f"Log: {ruta_log}")
         print("------------------------------------------------------------")
 
         comando = [
             sys.executable,
             str(script_train),
-            "--config",
-            str(config_path),
+            "--config", str(config_path),
+            "--nombre-experimento", nombre_exp,
         ]
 
         inicio = time.time()
@@ -90,6 +148,7 @@ def main():
         with open(ruta_log, "w", encoding="utf-8", errors="replace") as f:
             f.write("============================================================\n")
             f.write(f"CONFIG: {config_rel}\n")
+            f.write(f"NOMBRE_EXP: {nombre_exp}\n")
             f.write(f"INICIO: {datetime.now().isoformat(timespec='seconds')}\n")
             f.write(f"COMANDO: {' '.join(comando)}\n")
             f.write("============================================================\n\n")
@@ -130,7 +189,7 @@ def main():
 
     ruta_resumen = carpeta_logs / "resumen_batch.txt"
     with open(ruta_resumen, "w", encoding="utf-8") as f:
-        f.write("RESUMEN DE TESTS\n")
+        f.write(f"RESUMEN DE BATCH: {fase_seleccionada}\n")
         f.write("================\n")
         f.write(f"Inicio batch: {timestamp}\n")
         f.write(f"Duracion total min: {duracion_total / 60:.2f}\n\n")
@@ -138,9 +197,9 @@ def main():
         for config_rel, estado, duracion in resumen:
             f.write(f"{estado:12s} | {duracion / 60:8.2f} min | {config_rel}\n")
 
-    print("================================================------------")
+    print("============================================================")
     print("RESUMEN")
-    print("================================================------------")
+    print("============================================================")
     for config_rel, estado, duracion in resumen:
         print(f"{estado:12s} | {duracion / 60:8.2f} min | {config_rel}")
 

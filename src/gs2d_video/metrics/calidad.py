@@ -109,16 +109,148 @@ def _promedio_o_none(valores):
     return float(np.mean(validos)) if validos else None
 
 
+def _agregados(valores, prefijo):
+    """Devuelve dict con {prefijo}_promedio/min/max/p5/std. Ignora None."""
+    validos = [v for v in valores if v is not None and not np.isinf(v)]
+    if not validos:
+        return {
+            f"{prefijo}_promedio": None,
+            f"{prefijo}_min":      None,
+            f"{prefijo}_max":      None,
+            f"{prefijo}_p5":       None,
+            f"{prefijo}_std":      None,
+        }
+    arr = np.asarray(validos, dtype=np.float64)
+    return {
+        f"{prefijo}_promedio": float(arr.mean()),
+        f"{prefijo}_min":      float(arr.min()),
+        f"{prefijo}_max":      float(arr.max()),
+        f"{prefijo}_p5":       float(np.percentile(arr, 5.0)),
+        f"{prefijo}_std":      float(arr.std()),
+    }
+
+
+def _psnr_temporal_por_frame(render_batch, frames_gt, data_range=2.0):
+    """
+    PSNR de las diferencias frame-a-frame:
+        dR  = R_t  - R_{t-1}        en [-1, 1]
+        dGT = GT_t - GT_{t-1}       en [-1, 1]
+        err = dR - dGT              en [-2,  2]
+        MSE = mean(err^2)
+        PSNR_temp_t = 10 * log10(data_range^2 / MSE)
+
+    data_range=2.0 porque la amplitud maxima de las diferencias es 2 (de -1 a 1).
+    Devuelve lista de longitud n_frames; el indice 0 es None porque no hay frame previo.
+    """
+    n = render_batch.shape[0]
+    out = [None]
+
+    for t in range(1, n):
+        dR = render_batch[t] - render_batch[t - 1]
+        dGT = frames_gt[t] - frames_gt[t - 1]
+        err = dR - dGT
+        mse = float(torch.mean(err * err).item())
+        if mse <= 0.0:
+            out.append(float("inf"))
+        else:
+            out.append(10.0 * float(np.log10((data_range ** 2) / mse)))
+
+    return out
+
+
+@torch.no_grad()
+def reporte_completo_streaming(
+    n_frames,
+    fn_obtener_par,
+    device=None,
+    usar_ssim=True,
+    usar_lpips=False,
+    data_range_temporal=2.0,
+):
+    """
+    Calcula el mismo dict que reporte_completo() pero SIN apilar renders.
+
+    Args:
+        n_frames        : int.
+        fn_obtener_par  : callable j -> (render_j_clamped, gt_j_clamped),
+                          ambos (H,W,3) en [0,1], en el mismo device.
+                          Se llama exactamente una vez por frame.
+        device          : device para LPIPS.
+        usar_ssim, usar_lpips : igual que reporte_completo.
+        data_range_temporal : usado para el PSNR temporal (default 2.0).
+
+    Para PSNR temporal mantiene 2 frames en memoria (render previo y gt previo).
+    El indice 0 de psnr_temporal_por_frame siempre es None.
+    """
+    psnrs, ssims, lpipss = [], [], []
+    psnrs_temp = [None]
+
+    prev_render = None
+    prev_gt = None
+
+    for j in range(n_frames):
+        render_j, gt_j = fn_obtener_par(j)
+
+        psnrs.append(calcular_psnr(render_j, gt_j))
+
+        if usar_ssim:
+            ssims.append(calcular_ssim(render_j, gt_j))
+        else:
+            ssims.append(None)
+
+        if usar_lpips:
+            lpipss.append(calcular_lpips(render_j, gt_j, device=device))
+        else:
+            lpipss.append(None)
+
+        if j > 0 and prev_render is not None and prev_gt is not None:
+            dR = render_j - prev_render
+            dGT = gt_j - prev_gt
+            err = dR - dGT
+            mse = float(torch.mean(err * err).item())
+            if mse <= 0.0:
+                psnrs_temp.append(float("inf"))
+            else:
+                psnrs_temp.append(
+                    10.0 * float(np.log10((data_range_temporal ** 2) / mse))
+                )
+
+        prev_render = render_j
+        prev_gt = gt_j
+
+    salida = {
+        "psnr_por_frame":          psnrs,
+        "ssim_por_frame":          ssims,
+        "lpips_por_frame":         lpipss,
+        "psnr_temporal_por_frame": psnrs_temp,
+    }
+    salida.update(_agregados(psnrs,      "psnr"))
+    salida.update(_agregados(ssims,      "ssim"))
+    salida.update(_agregados(lpipss,     "lpips"))
+    salida.update(_agregados(psnrs_temp, "psnr_temporal"))
+
+    return salida
+
+
 @torch.no_grad()
 def reporte_completo(render_batch, frames_gt, device=None, usar_ssim=True, usar_lpips=False):
     """
-    Calcula metricas por frame y promedios.
+    Calcula metricas por frame y agregados (promedio, min, max, p5, std).
 
     Args:
         render_batch : (n_frames, H, W, 3) en [0, 1]
         frames_gt    : (n_frames, H, W, 3) en [0, 1]
         usar_ssim    : si False, no calcula SSIM. Util para debug rapido.
         usar_lpips   : si False, no carga AlexNet/LPIPS. Util para debug rapido.
+
+    Devuelve dict con:
+        psnr_por_frame, ssim_por_frame, lpips_por_frame      : list[float|None]
+        psnr_temporal_por_frame                              : list[float|None]
+                                                               (indice 0 es None)
+        psnr_promedio/min/max/p5/std                         : float|None
+        ssim_promedio/min/max/p5/std                         : float|None
+        lpips_promedio/min/max/p5/std                        : float|None
+        psnr_temporal_promedio/min/max/p5/std                : float|None
     """
     n_frames = render_batch.shape[0]
     psnrs, ssims, lpipss = [], [], []
@@ -136,11 +268,17 @@ def reporte_completo(render_batch, frames_gt, device=None, usar_ssim=True, usar_
         else:
             lpipss.append(None)
 
-    return {
-        "psnr_por_frame": psnrs,
-        "psnr_promedio": float(np.mean(psnrs)),
-        "ssim_por_frame": ssims,
-        "ssim_promedio": _promedio_o_none(ssims),
-        "lpips_por_frame": lpipss,
-        "lpips_promedio": _promedio_o_none(lpipss),
+    psnrs_temp = _psnr_temporal_por_frame(render_batch, frames_gt, data_range=2.0)
+
+    salida = {
+        "psnr_por_frame":          psnrs,
+        "ssim_por_frame":          ssims,
+        "lpips_por_frame":         lpipss,
+        "psnr_temporal_por_frame": psnrs_temp,
     }
+    salida.update(_agregados(psnrs,      "psnr"))
+    salida.update(_agregados(ssims,      "ssim"))
+    salida.update(_agregados(lpipss,     "lpips"))
+    salida.update(_agregados(psnrs_temp, "psnr_temporal"))
+
+    return salida

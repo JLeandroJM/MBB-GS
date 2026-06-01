@@ -23,7 +23,7 @@ SRC = RAIZ / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from gs2d_video.core.bases import construir_matriz
+from gs2d_video.core.bases import construir_matriz_chebyshev
 from gs2d_video.core.modelo import GaussianasPolinomial2D
 from gs2d_video.render.renderer import render_frame
 
@@ -66,7 +66,6 @@ def cargar_checkpoint_y_modelo(ruta_checkpoint, device, clip_override=None):
 
     sd = ckpt["state_dict_coefs"]
     grados = dict(sd.get("grados", config["grados"]))
-    base = sd.get("base", config["base"])
     n_gaussianas = int(sd.get("N", inferir_n_gaussianas(sd, config)))
     H = int(sd.get("H"))
     W = int(sd.get("W"))
@@ -76,7 +75,6 @@ def cargar_checkpoint_y_modelo(ruta_checkpoint, device, clip_override=None):
         n_gaussianas=n_gaussianas,
         n_frames=n_frames,
         grados=grados,
-        base=base,
         H=H,
         W=W,
         device=device,
@@ -91,7 +89,7 @@ def cargar_checkpoint_y_modelo(ruta_checkpoint, device, clip_override=None):
             getattr(modelo, f"{nombre}_high").copy_(sd[f"{nombre}_high"].to(device))
 
     modelo.eval()
-    return modelo, config, grados, base, n_frames, H, W, n_gaussianas
+    return modelo, config, grados, n_frames, H, W, n_gaussianas
 
 
 def imagen_render_a_uint8(render):
@@ -146,7 +144,7 @@ def regenerar_frames_streaming(
     device_str = device_str or "cuda"
     device = elegir_device(device_str)
 
-    modelo, config, grados, base, n_frames_ckpt, H, W, n_gaussianas = cargar_checkpoint_y_modelo(
+    modelo, config, grados, n_frames_ckpt, H, W, n_gaussianas = cargar_checkpoint_y_modelo(
         checkpoint, device, clip_override=clip_override
     )
 
@@ -174,7 +172,6 @@ def regenerar_frames_streaming(
     print(f"clip       : {clip}", flush=True)
     print(f"carpeta clip: {carpeta_clip}", flush=True)
     print(f"device     : {device}", flush=True)
-    print(f"base       : {base}", flush=True)
     print(f"N          : {n_gaussianas}", flush=True)
     print(f"frames ckpt: {n_frames_ckpt}", flush=True)
     print(f"frames clip: {n_frames_clip}", flush=True)
@@ -184,7 +181,7 @@ def regenerar_frames_streaming(
 
     grados_distintos = sorted(set(grados.values()))
     matrices_base = {
-        g: construir_matriz(base, n_frames_ckpt, g, device=device, dtype=torch.float32)
+        g: construir_matriz_chebyshev(n_frames_ckpt, g, device=device, dtype=torch.float32)
         for g in grados_distintos
     }
 
