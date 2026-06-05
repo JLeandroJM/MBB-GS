@@ -42,5 +42,4 @@ python .\scripts\AUDIO_SCRIPTS\convertir_audio_limpio.py `
   --sr 44100 `
   --mono
 
-python .\scripts\AUDIO_SCRIPTS\train_audio_config.py --config .\configs\audio\TU_CONFIG.json
-
+python .\scripts\AUDIO_SCRIPTS\train_audio_stereo_config.py --config .\configs\audio\rock_61s_30s_stereo_N6144_hardTEMP.json
