@@ -27,3 +27,20 @@ python .\scripts\frames_a_video.py `
   --frames .\outputs\3\frames_renderizados `
   --salida .\outputs\3\video_reconstruido.mp4 `
   --fps 30
+
+
+
+
+
+###################3 AUDIO#########
+
+python .\scripts\AUDIO_SCRIPTS\convertir_audio_limpio.py `
+  --input .\data\audio\RockThatBody.wav `
+  --output .\data\audio\RockThatBody_61s_30s_mono_44k.wav `
+  --inicio 61 `
+  --segundos 30 `
+  --sr 44100 `
+  --mono
+
+python .\scripts\AUDIO_SCRIPTS\train_audio_config.py --config .\configs\audio\TU_CONFIG.json
+

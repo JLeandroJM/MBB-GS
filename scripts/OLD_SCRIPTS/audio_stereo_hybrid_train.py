@@ -15,10 +15,11 @@ SRC = RAIZ / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from gs2d_audio_stereo.core.modelo_stereo import (
-    GaussianasStereoTemporalesCheb,
+from gs2d_audio_stereo.core.modelo_hybrid import (
+    GaussianasStereoHybridCheb,
     construir_bases,
-    construir_optimizador_stereo,
+    construir_optimizador_hybrid,
+    loss_smoothness_hybrid,
 )
 
 
@@ -182,14 +183,24 @@ def main():
     n_frames, n_bins = target_l.shape
 
     grados = {
-        "mu_f": int(cfg.get("grado_mu_f", 80)),
-        "sigma_f": int(cfg.get("grado_sigma_f", 20)),
-        "amp_l": int(cfg.get("grado_amp_l", 100)),
-        "amp_r": int(cfg.get("grado_amp_r", 100)),
+        "mu_shared": int(cfg.get("grado_mu_shared", 120)),
+        "sigma_shared": int(cfg.get("grado_sigma_shared", 24)),
+        "amp_shared_l": int(cfg.get("grado_amp_shared_l", 160)),
+        "amp_shared_r": int(cfg.get("grado_amp_shared_r", 160)),
+
+        "mu_private_l": int(cfg.get("grado_mu_private_l", 80)),
+        "sigma_private_l": int(cfg.get("grado_sigma_private_l", 20)),
+        "amp_private_l": int(cfg.get("grado_amp_private_l", 120)),
+
+        "mu_private_r": int(cfg.get("grado_mu_private_r", 80)),
+        "sigma_private_r": int(cfg.get("grado_sigma_private_r", 20)),
+        "amp_private_r": int(cfg.get("grado_amp_private_r", 120)),
     }
 
-    modelo = GaussianasStereoTemporalesCheb(
-        n_gaussianas=int(cfg.get("n_gaussianas", 1000)),
+    modelo = GaussianasStereoHybridCheb(
+        n_shared=int(cfg.get("n_shared", 3000)),
+        n_private_l=int(cfg.get("n_private_l", 1000)),
+        n_private_r=int(cfg.get("n_private_r", 1000)),
         n_frames=n_frames,
         n_bins=n_bins,
         grados=grados,
@@ -198,7 +209,7 @@ def main():
     )
 
     bases = construir_bases(n_frames, grados, device)
-    opt = construir_optimizador_stereo(modelo)
+    opt = construir_optimizador_hybrid(modelo, cfg.get("lrs", None))
 
     epochs = int(cfg.get("epochs", 400))
     batch_temporal = int(cfg.get("batch_temporal", 16))
@@ -216,7 +227,9 @@ def main():
     print(f"duracion: {len(x_np)/sr:.2f}s")
     print(f"target stereo: T={n_frames}, F={n_bins}")
     print(f"grados: {grados}")
-    print(f"N: {modelo.n_gaussianas}")
+    print(f"N_shared: {modelo.n_shared}")
+    print(f"N_private_L: {modelo.n_private_l}")
+    print(f"N_private_R: {modelo.n_private_r}")
     print("")
 
     log_csv = salida / "log_entrenamiento.csv"
@@ -255,6 +268,27 @@ def main():
                 l1_r_epoch += float(l1_r.cpu()) * peso
                 mse_l_epoch += float(mse_l.cpu()) * peso
                 mse_r_epoch += float(mse_r.cpu()) * peso
+
+            beta_smooth = float(cfg.get("beta_smoothness", 1e-10))
+            pesos_smoothness = cfg.get("pesos_smoothness", {
+                "mu_f": 0.0,
+                "sigma_f": 0.5,
+                "amp_l": 0.0,
+                "amp_r": 0.0,
+            })
+
+            loss_smooth = loss_smoothness_hybrid(modelo, pesos_smoothness)
+
+            if beta_smooth != 0.0:
+                (beta_smooth * loss_smooth).backward()
+
+
+            beta_smooth = float(cfg.get("beta_smoothness", 1e-10))
+            pesos_smoothness = cfg.get("pesos_smoothness", {})
+            loss_smooth = loss_smoothness_hybrid(modelo, pesos_smoothness)
+
+            if beta_smooth != 0.0:
+                (beta_smooth * loss_smooth).backward()
 
             opt.step()
 
@@ -357,7 +391,9 @@ def main():
         "snr_r_db": float(snr_r),
         "psnr_logmag_l": historial[-1]["psnr_l"],
         "psnr_logmag_r": historial[-1]["psnr_r"],
-        "n_gaussianas": modelo.n_gaussianas,
+        "n_shared": modelo.n_shared,
+        "n_private_l": modelo.n_private_l,
+        "n_private_r": modelo.n_private_r,
         "grados": grados,
         "epochs": epochs,
         "batch_temporal": batch_temporal,

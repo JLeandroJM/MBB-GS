@@ -13,7 +13,7 @@ from PIL import Image
 from scipy.io import wavfile
 from scipy import signal
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 SRC = RAIZ / "src"
 
 if str(SRC) not in sys.path:

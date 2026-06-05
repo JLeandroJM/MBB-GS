@@ -95,12 +95,36 @@ class GaussianasStereoTemporalesCheb(nn.Module):
         return pred_l, pred_r
 
 
-def construir_optimizador_stereo(modelo):
+def loss_smoothness_stereo(modelo, pesos):
+    loss = 0.0
+
+    def penalizar(high, peso):
+        if peso == 0.0:
+            return 0.0
+        if high.numel() == 0:
+            return 0.0
+        k = torch.arange(1, high.shape[1] + 1, device=high.device, dtype=high.dtype)
+        k = k.view(1, -1)
+        return float(peso) * torch.mean((high * (k ** 2)) ** 2)
+
+    loss = loss + penalizar(modelo.mu_f_high, pesos.get("mu_f", 0.0))
+    loss = loss + penalizar(modelo.sigma_f_high, pesos.get("sigma_f", 0.0))
+    loss = loss + penalizar(modelo.amp_l_high, pesos.get("amp_l", 0.0))
+    loss = loss + penalizar(modelo.amp_r_high, pesos.get("amp_r", 0.0))
+
+    return loss
+
+def construir_optimizador_stereo(modelo, lrs=None):
+    if lrs is None:
+        lrs = {}
+
     return torch.optim.Adam([
-        {"params": [modelo.mu_f_a0], "lr": 1e-2},
-        {"params": [modelo.mu_f_high], "lr": 1e-3},
-        {"params": [modelo.sigma_f_a0], "lr": 5e-3},
-        {"params": [modelo.sigma_f_high], "lr": 5e-4},
-        {"params": [modelo.amp_l_a0, modelo.amp_r_a0], "lr": 2e-2},
-        {"params": [modelo.amp_l_high, modelo.amp_r_high], "lr": 2e-3},
+        {"params": [modelo.mu_f_a0], "lr": float(lrs.get("mu_f_a0", 0.005))},
+        {"params": [modelo.mu_f_high], "lr": float(lrs.get("mu_f_high", 0.006))},
+
+        {"params": [modelo.sigma_f_a0], "lr": float(lrs.get("sigma_f_a0", 0.004))},
+        {"params": [modelo.sigma_f_high], "lr": float(lrs.get("sigma_f_high", 0.001))},
+
+        {"params": [modelo.amp_l_a0, modelo.amp_r_a0], "lr": float(lrs.get("amp_a0", 0.03))},
+        {"params": [modelo.amp_l_high, modelo.amp_r_high], "lr": float(lrs.get("amp_high", 0.01))},
     ])

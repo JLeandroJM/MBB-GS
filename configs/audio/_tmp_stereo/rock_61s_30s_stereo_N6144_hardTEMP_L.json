@@ -1,38 +1,31 @@
 {
-  "nombre_experimento": "rock_61s_30s_stereo_N6144_hardTEMP",
+  "nombre_experimento": "rock_61s_30s_stereo_N6144_hardTEMP_L",
   "modo_audio": "stereo",
   "audio": "data/audio/RockThatBody_61s_30s_stereo_44k.wav",
-
   "max_segundos": 30,
   "sr": 44100,
   "n_fft": 2048,
   "hop": 512,
-
   "n_gaussianas": 6144,
   "epochs": 100,
   "batch_temporal": 4,
   "log_cada": 50,
-
   "grado_mu_f": 120,
   "grado_sigma_f": 24,
   "grado_amp": 200,
-
   "tipo_loss": "hard",
   "lambda_mse": 0.25,
   "lambda_hard": 1.0,
-
   "lambda_motion": 0.0,
   "lambda_temporal": 0.0,
   "lambda_freq_edge": 0.0,
   "lambda_dssim": 0.0,
-
   "motion_clip": 5.0,
   "hard_clip": 3.0,
   "exponente_pixel": 1.0,
   "usar_pnorm_root": false,
-
   "griffin_lim_iters": 150,
-
   "usar_render_cuda_audio": true,
-  "usar_loss_cuda_audio": true
+  "usar_loss_cuda_audio": true,
+  "canal": "left"
 }

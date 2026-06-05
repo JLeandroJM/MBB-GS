@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import datetime
 
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 
 
 def agregar_arg(cmd, flag, valor):
@@ -51,7 +51,7 @@ def main():
 
     shutil.copy2(config_path, salida / "config_original.json")
 
-    script = RAIZ / "scripts" / "audio_fase2_real_wav.py"
+    script = RAIZ / "scripts" / "AUDIO_SCRIPTS" / "audio_fase2_real_wav.py"
 
     cmd = [
         sys.executable,

@@ -1,5 +1,5 @@
 ﻿{
-  "nombre_experimento": "rock_61s_8s_N6144_hard_g120_24_200_v2",
+  "nombre_experimento": "rock_61s_8s_TEST",
   "audio": "data/audio/RockThatBody_61s_8s_mono_44k.wav",
 
   "max_segundos": 8,
@@ -8,7 +8,7 @@
   "hop": 512,
 
   "n_gaussianas": 6144,
-  "epochs": 600,
+  "epochs": 100,
   "batch_temporal": 4,
   "log_cada": 25,
 

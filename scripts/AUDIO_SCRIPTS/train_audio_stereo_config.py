@@ -6,7 +6,7 @@ from scipy.io import wavfile
 import numpy as np
 
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 
 
 def guardar_wav_stereo(ruta, sr, left, right):
@@ -59,7 +59,7 @@ def main():
     print("=== ENTRENANDO CANAL L ===")
     subprocess.check_call([
         sys.executable,
-        str(RAIZ / "scripts" / "train_audio_config.py"),
+        str(RAIZ / "scripts" / "AUDIO_SCRIPTS" / "train_audio_config.py"),
         "--config",
         str(ruta_L),
     ], cwd=str(RAIZ))
@@ -67,7 +67,7 @@ def main():
     print("=== ENTRENANDO CANAL R ===")
     subprocess.check_call([
         sys.executable,
-        str(RAIZ / "scripts" / "train_audio_config.py"),
+        str(RAIZ / "scripts" / "AUDIO_SCRIPTS" / "train_audio_config.py"),
         "--config",
         str(ruta_R),
     ], cwd=str(RAIZ))

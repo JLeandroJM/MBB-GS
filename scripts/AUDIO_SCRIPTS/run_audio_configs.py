@@ -8,7 +8,7 @@ from pathlib import Path
 from datetime import datetime
 
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 
 
 

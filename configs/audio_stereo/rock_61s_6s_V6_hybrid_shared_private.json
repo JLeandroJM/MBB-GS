@@ -1,0 +1,57 @@
+﻿{
+  "nombre_experimento": "rock_61s_6s_V6_hybrid_shared_private",
+  "audio": "data/audio/RockThatBody_61s_30s_stereo_44k.wav",
+
+  "max_segundos": 6,
+  "sr": 44100,
+  "n_fft": 2048,
+  "hop": 512,
+
+  "n_shared": 3000,
+  "n_private_l": 1000,
+  "n_private_r": 1000,
+
+  "epochs": 250,
+  "batch_temporal": 16,
+  "log_cada": 50,
+
+  "grado_mu_shared": 120,
+  "grado_sigma_shared": 24,
+  "grado_amp_shared_l": 160,
+  "grado_amp_shared_r": 160,
+
+  "grado_mu_private_l": 80,
+  "grado_sigma_private_l": 20,
+  "grado_amp_private_l": 120,
+
+  "grado_mu_private_r": 80,
+  "grado_sigma_private_r": 20,
+  "grado_amp_private_r": 120,
+
+  "tipo_loss": "hard",
+  "lambda_mse": 0.25,
+  "lambda_hard": 1.0,
+  "hard_clip": 3.0,
+
+  "beta_smoothness": 1e-10,
+  "pesos_smoothness": {
+    "mu_shared": 0.0,
+    "mu_private_l": 0.0,
+    "mu_private_r": 0.0,
+    "sigma_shared": 0.5,
+    "sigma_private_l": 0.5,
+    "sigma_private_r": 0.5,
+    "amp": 0.0
+  },
+
+  "lrs": {
+    "mu_a0": 0.005,
+    "mu_high": 0.006,
+    "sigma_a0": 0.004,
+    "sigma_high": 0.001,
+    "amp_a0": 0.03,
+    "amp_high": 0.01
+  },
+
+  "griffin_lim_iters": 150
+}
