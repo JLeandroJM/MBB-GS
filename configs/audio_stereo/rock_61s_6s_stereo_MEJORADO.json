@@ -1,0 +1,26 @@
+﻿{
+  "nombre_experimento": "rock_61s_6s_V3MEJORADO",
+  "audio": "data/audio/RockThatBody_61s_30s_stereo_44k.wav",
+
+  "max_segundos": 6,
+  "sr": 44100,
+  "n_fft": 2048,
+  "hop": 512,
+
+  "n_gaussianas": 6000,
+  "epochs": 400,
+  "batch_temporal": 12,
+  "log_cada": 50,
+
+  "grado_mu_f": 140,
+  "grado_sigma_f": 30,
+  "grado_amp_l": 200,
+  "grado_amp_r": 200,
+
+  "tipo_loss": "hard",
+  "lambda_mse": 0.25,
+  "lambda_hard": 1.0,
+  "hard_clip": 3.0,
+
+  "griffin_lim_iters": 250
+}

@@ -24,6 +24,6 @@ python .\scripts\regenerar_clip_desde_checkpoint_streaming.py `
 2. Script para convertir las imágenes a video
 
 python .\scripts\frames_a_video.py `
-  --frames .\outputs\RUNPOD\T2\frames_rasterizados `
-  --salida .\outputs\RUNPOD\T2\video_reconstruido.mp4 `
+  --frames .\outputs\3\frames_renderizados `
+  --salida .\outputs\3\video_reconstruido.mp4 `
   --fps 30
