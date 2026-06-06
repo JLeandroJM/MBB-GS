@@ -88,3 +88,5 @@ data/tmp/
 Thumbs.db
 .vscode/
 .idea/
+
+outputs_khipu/

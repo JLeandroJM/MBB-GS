@@ -1,7 +1,7 @@
 {
   "_comentario": "Ablacion sistematica de loss. Cambiar 'clip' y 'max_frames' al video de prueba real.",
   "nombre_experimento": "fase1_l1_mse",
-  "clip": "test30s_clips",
+  "clip": "video_clips",
   "video_mp4": null,
   "n_frames_extraer": null,
   "fps_extraccion": null,
@@ -10,7 +10,7 @@
     1280
   ],
   "forzar_extraccion": false,
-  "max_frames": 900,
+  "max_frames": 600,
   "device": "cuda",
   "seed": 42,
   "n_gaussianas_inicial": 100000,
@@ -38,8 +38,8 @@
     "depth_a0": 0.001,
     "depth_high": 0.0001
   },
-  "n_epochs": 1200,
-  "checkpoint_cada_n_epochs": 200,
+  "n_epochs": 800,
+  "checkpoint_cada_n_epochs": 400,
   "sub_batch_frames": 2,
   "tipo_loss": "l1_mse",
   "lambda_dssim": 0.25,
@@ -83,7 +83,7 @@
   "frames_en_cpu": true,
   "frames_en_gpu_uint8": false,
   "evitar_render_completo_en_train": true,
-  "sobreescribir_salida": false,
+  "sobreescribir_salida": true,
   "calcular_metricas": true,
   "usar_ssim": true,
   "usar_lpips": true,
@@ -91,7 +91,7 @@
   "guardar_visualizaciones": true,
   "guardar_gif": true,
   "guardar_frames_rasterizados": true,
-  "guardar_checkpoints_intermedios": false,
+  "guardar_checkpoints_intermedios": true,
   "guardar_verificacion_visual": false,
   "calidades_avif": [
     80,

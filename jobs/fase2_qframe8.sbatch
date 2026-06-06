@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=fase1_edge
+#SBATCH --job-name=fase2_qframe8
 #SBATCH --partition=gpu
 #SBATCH --gres=shard:6
 #SBATCH --ntasks=1
@@ -14,7 +14,6 @@
 set -e
 cd $HOME/MBB-GS
 
-# Modulos confirmados en Khipu (nombres reales del 'module avail').
 module load cuda/12.8
 module load gnu12/12.4.0
 module load miniconda/3.0
@@ -29,7 +28,7 @@ python -c "import torch; print('torch', torch.__version__, 'cuda_ok', torch.cuda
 echo "=== START $(date) ==="
 
 python scripts/train.py \
-    --config configs/fase1_edge.json \
-    --nombre-experimento fase1_edge
+    --config configs/fase2_qframe8.json \
+    --nombre-experimento fase2_qframe8
 
 echo "=== END $(date) ==="
