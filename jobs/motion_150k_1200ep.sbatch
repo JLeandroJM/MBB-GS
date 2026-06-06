@@ -1,7 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=motion_150k_1200ep
-#SBATCH --partition=data-science
+#SBATCH --partition=gpu
 #SBATCH --exclude=ag001
+#SBATCH --nodelist=g002
 #SBATCH --gres=shard:6
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
