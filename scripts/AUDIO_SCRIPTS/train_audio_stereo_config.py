@@ -295,6 +295,16 @@ def main():
 
     escribir_metricas_stereo(out_stereo / "metricas_stereo.txt", datos_metricas)
 
+    try:
+        subprocess.call([
+            sys.executable,
+            str(RAIZ / "scripts" / "AUDIO_SCRIPTS" / "generar_graficas_stereo.py"),
+            "--experimento",
+            nombre_base,
+        ], cwd=str(RAIZ))
+    except Exception as e:
+        print(f"warning: no se pudieron generar graficas stereo: {e}")
+
     print("")
     print("============================================================")
     print(" LISTO")

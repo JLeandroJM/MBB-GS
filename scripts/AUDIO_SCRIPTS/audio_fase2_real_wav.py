@@ -209,6 +209,9 @@ def main():
     parser.add_argument("--grado-mu-f", type=int, default=40)
     parser.add_argument("--grado-sigma-f", type=int, default=10)
     parser.add_argument("--grado-amp", type=int, default=40)
+    parser.add_argument("--sigma-inicial-bins", type=float, default=6.0)
+    parser.add_argument("--finetune-epochs", type=int, default=0)
+    parser.add_argument("--finetune-lr-scale", type=float, default=0.2)
     parser.add_argument("--usar-loss-cuda-audio", action="store_true")
     parser.add_argument("--usar-render-cuda-audio", action="store_true")
     parser.add_argument("--griffin-lim-iters", type=int, default=150)
@@ -297,6 +300,9 @@ def main():
     print(f"loss audio: {config_loss}")
     print(f"usar_loss_cuda_audio: {bool(args.usar_loss_cuda_audio)}")
     print(f"usar_render_cuda_audio: {bool(args.usar_render_cuda_audio)}")
+    print(f"sigma_inicial_bins: {float(args.sigma_inicial_bins)}")
+    print(f"finetune_epochs: {int(args.finetune_epochs)}")
+    print(f"finetune_lr_scale: {float(args.finetune_lr_scale)}")
 
     grados_distintos = sorted(set(grados.values()))
     matrices_base = {
@@ -316,7 +322,7 @@ def main():
         grados=grados,
         device=device,
         semilla=42,
-        sigma_inicial_bins=6.0,
+        sigma_inicial_bins=float(args.sigma_inicial_bins),
     )
 
     opt = construir_optimizador_audio(
@@ -342,6 +348,9 @@ def main():
     ruta_log_csv = salida / "log_entrenamiento.csv"
     historial = []
     t_inicio_train = time.time()
+    total_epochs = int(args.epochs) + max(0, int(args.finetune_epochs))
+    finetune_inicio = int(args.epochs) + 1
+    finetune_aplicado = False
 
     with open(ruta_log_csv, "w", newline="", encoding="utf-8") as fcsv:
         writer = csv.writer(fcsv)
@@ -357,10 +366,32 @@ def main():
             "tipo_loss",
             "n_gaussianas",
             "batch_temporal",
+            "fase",
         ])
 
-        for epoch in range(1, args.epochs + 1):
+        for epoch in range(1, total_epochs + 1):
             t_epoch = time.time()
+
+            if (
+                not finetune_aplicado
+                and int(args.finetune_epochs) > 0
+                and epoch == finetune_inicio
+            ):
+                escala_ft = float(args.finetune_lr_scale)
+                for grupo in opt.param_groups:
+                    grupo['lr'] = float(grupo['lr']) * escala_ft
+
+                finetune_aplicado = True
+                print('')
+                print('=== fine tuning audio ===')
+                print(f'finetune_epochs={int(args.finetune_epochs)}')
+                print(f'finetune_lr_scale={escala_ft}')
+                for grupo in opt.param_groups:
+                    print(f"lr {grupo.get('name', '?')}={grupo['lr']:.8e}")
+
+            fase_epoch = 'finetune' if (
+                int(args.finetune_epochs) > 0 and epoch >= finetune_inicio
+            ) else 'base'
             opt.zero_grad(set_to_none=True)
 
             # Entrenamiento FULL por chunks temporales.
@@ -501,7 +532,7 @@ def main():
             t_epoch_seg = time.time() - t_epoch
             t_corrido = time.time() - t_inicio_train
             t_prom = t_corrido / max(1, epoch)
-            eta = t_prom * (args.epochs - epoch)
+            eta = t_prom * (total_epochs - epoch)
 
             loss_smooth_val = float(loss_smooth.detach().cpu())
             loss_total_epoch = loss_data_epoch + beta_smooth * loss_smooth_val
@@ -521,6 +552,7 @@ def main():
                 "tipo_loss": args.tipo_loss,
                 "n_gaussianas": args.n_gaussianas,
                 "batch_temporal": args.batch_temporal,
+                "fase": fase_epoch,
             })
 
             writer.writerow([
@@ -535,19 +567,20 @@ def main():
                 args.tipo_loss,
                 args.n_gaussianas,
                 args.batch_temporal,
+                fase_epoch,
             ])
             fcsv.flush()
 
-            if epoch == 1 or epoch % int(args.log_cada) == 0 or epoch == args.epochs:
+            if epoch == 1 or epoch % int(args.log_cada) == 0 or epoch == total_epochs:
                 print(
-                    f"epoch {epoch:04d}/{args.epochs} "
+                    f"epoch {epoch:04d}/{total_epochs} "
                     f"loss={loss_total_epoch:.6f} "
                     f"l1={loss_l1_epoch:.6f} "
                     f"mse={loss_mse_epoch:.6f} "
                     f"psnr_logmag={psnr_epoch:.2f} "
                     f"t_epoch={t_epoch_seg:.1f}s "
                     f"eta={eta / 60.0:.1f}min "
-                    f"loss_type={args.tipo_loss}",
+                    f"loss_type={args.tipo_loss} phase={fase_epoch}",
                     flush=True,
                 )
 

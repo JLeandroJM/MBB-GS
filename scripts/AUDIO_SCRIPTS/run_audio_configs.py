@@ -60,10 +60,17 @@ def leer_metricas_txt(ruta):
 
 
 def experimento_completo(carpeta_salida):
-    return (
+    mono_ok = (
         (carpeta_salida / "metricas_audio.txt").exists()
         and (carpeta_salida / "recon_fase_original.wav").exists()
     )
+
+    stereo_ok = (
+        (carpeta_salida / "metricas_stereo.txt").exists()
+        and (carpeta_salida / "recon_stereo_fase_original.wav").exists()
+    )
+
+    return mono_ok or stereo_ok
 
 
 def recolectar_resumen(configs, carpeta_logs):
@@ -201,9 +208,16 @@ def main():
         print(f"log: {ruta_log}")
         print("------------------------------------------------------------")
 
+        modo_audio = str(cfg.get("modo_audio", "mono")).lower().strip()
+
+        if modo_audio == "stereo":
+            script_train = RAIZ / "scripts" / "AUDIO_SCRIPTS" / "train_audio_stereo_config.py"
+        else:
+            script_train = RAIZ / "scripts" / "AUDIO_SCRIPTS" / "train_audio_config.py"
+
         cmd = [
             sys.executable,
-            str(RAIZ / "scripts" / "train_audio_config.py"),
+            str(script_train),
             "--config",
             str(cfg_path),
         ]
