@@ -38,6 +38,7 @@ if str(SRC) not in sys.path:
 
 from gs2d_gabor.core.modelo_gabor import GaborAudio1D, construir_optimizador_gabor
 from gs2d_gabor.core.perdidas_gabor import loss_gabor, metricas_audio
+from gs2d_gabor.core.metricas_perceptuales import calcular_metricas_perceptuales
 
 
 # ======================================================================
@@ -199,6 +200,8 @@ def main():
         f_max_hz=config.get("f_max_hz"),
         k_sigma=float(config.get("k_sigma", 4.0)),
         semilla=seed,
+        sigma_min_samples=float(config.get("sigma_min_samples", 2.0)),
+        sigma_max_frac=float(config.get("sigma_max_frac", 0.1)),
     )
     print(f"modelo Gabor: N={modelo.numero_atomos()} atomos  k_sigma={modelo.k_sigma}", flush=True)
 
@@ -217,8 +220,18 @@ def main():
     epochs_sin_mejora = 0
 
     # === loop ===
-    n_epochs = int(config["epochs"])
+    n_epochs_base = int(config["epochs"])
+    finetune_epochs = int(config.get("finetune_epochs", 0))
+    finetune_lr_scale = float(config.get("finetune_lr_scale", 1.0))
+    finetune_reset_scheduler = bool(config.get("finetune_reset_scheduler", True))
+
+    if finetune_epochs < 0:
+        finetune_epochs = 0
+
+    n_epochs = n_epochs_base + finetune_epochs
     log_cada = int(config.get("log_cada", 50))
+
+    config_loss_actual = dict(config)
 
     historial_loss = []
     historial_snr = []
@@ -226,11 +239,67 @@ def main():
     t0 = time.time()
 
     for epoch in range(n_epochs):
+        if epoch == n_epochs_base and finetune_epochs > 0:
+            print("", flush=True)
+            print("=== FINETUNING GABOR ===", flush=True)
+            print(f"epochs extra: {finetune_epochs}", flush=True)
+            print(f"lr scale    : {finetune_lr_scale}", flush=True)
+
+            for grupo in optimizer.param_groups:
+                old_lr = float(grupo["lr"])
+                grupo["lr"] = max(old_lr * finetune_lr_scale, sched_min_lr)
+                nombre = grupo.get("name", "grupo")
+                print(f"  lr {nombre}: {old_lr:.6e} -> {grupo['lr']:.6e}", flush=True)
+
+            overrides = config.get("finetune_loss_overrides", {})
+            if overrides:
+                print("  aplicando finetune_loss_overrides:", flush=True)
+                for k, v in overrides.items():
+                    print(f"    {k}: {config_loss_actual.get(k, None)} -> {v}", flush=True)
+                    config_loss_actual[k] = v
+
+            if finetune_reset_scheduler:
+                mejor_loss = float("inf")
+                epochs_sin_mejora = 0
+                print("  scheduler reiniciado para fine-tuning", flush=True)
+
+            print("========================", flush=True)
+            print("", flush=True)
+
         te = time.time()
         optimizer.zero_grad(set_to_none=True)
 
         x_hat = modelo.render()
-        loss, partes = loss_gabor(x_hat, x, config)
+        loss, partes = loss_gabor(x_hat, x, config_loss_actual)
+
+        # Regularizaciones opcionales anti-zumbido para Gabor.
+        lambda_amp_l2 = float(config_loss_actual.get("lambda_amp_l2", 0.0))
+        lambda_highfreq_amp = float(config_loss_actual.get("lambda_highfreq_amp", 0.0))
+        lambda_sigma_small = float(config_loss_actual.get("lambda_sigma_small", 0.0))
+
+        if lambda_amp_l2 > 0.0 or lambda_highfreq_amp > 0.0 or lambda_sigma_small > 0.0:
+            _, sigma_act, amp_act, fnorm_act, _ = modelo.activar_parametros()
+
+            if lambda_amp_l2 > 0.0:
+                l_amp_l2 = torch.mean(amp_act * amp_act)
+                loss = loss + lambda_amp_l2 * l_amp_l2
+                partes["l_amp_l2"] = float(l_amp_l2.detach())
+
+            if lambda_highfreq_amp > 0.0:
+                highfreq_start_hz = float(config_loss_actual.get("highfreq_start_hz", 6000.0))
+                freq_hz = fnorm_act * float(sr)
+                denom = max(1.0, float(sr) * 0.5 - highfreq_start_hz)
+                w = torch.clamp((freq_hz - highfreq_start_hz) / denom, min=0.0, max=1.0)
+                l_high = torch.mean((amp_act * w) ** 2)
+                loss = loss + lambda_highfreq_amp * l_high
+                partes["l_highfreq_amp"] = float(l_high.detach())
+
+            if lambda_sigma_small > 0.0:
+                sigma_target = float(config_loss_actual.get("sigma_small_target_samples", 8.0))
+                l_sig = torch.mean(torch.relu(sigma_target - sigma_act) ** 2)
+                loss = loss + lambda_sigma_small * l_sig
+                partes["l_sigma_small"] = float(l_sig.detach())
+
         loss.backward()
         optimizer.step()
 
@@ -268,6 +337,7 @@ def main():
     with torch.no_grad():
         x_hat = modelo.render()
         met_final = metricas_audio(x_hat, x)
+        met_perceptuales = calcular_metricas_perceptuales(x_hat, x, sr=sr, config=config)
     x_hat_np = x_hat.detach().cpu().numpy()
     guardar_wav(salida / "recon.wav", sr, x_hat_np)
 
@@ -278,21 +348,42 @@ def main():
         "snr_db": met_final["snr_db"],
         "psnr_db": met_final["psnr_db"],
         "mse_wave": met_final["mse_wave"],
+
+        "si_sdr_db": met_perceptuales.get("si_sdr_db"),
+        "lsd_db_promedio": met_perceptuales.get("lsd_db_promedio"),
+        "mel_l1_log": met_perceptuales.get("mel_l1_log"),
+        "mrstft_final": met_perceptuales.get("mrstft_final"),
         "n_atomos": modelo.numero_atomos(),
         "samples": T,
         "sr": sr,
         "duracion_s": T / sr,
+        "epochs_base": n_epochs_base,
+        "finetune_epochs": finetune_epochs,
+        "finetune_lr_scale": finetune_lr_scale,
+        "epochs_total": n_epochs,
         "bytes_modelo": bytes_modelo,
         "bytes_wav_int16": bytes_wav,
         "ratio_compresion_vs_wav": bytes_wav / max(1, bytes_modelo),
         "loss_final": historial_loss[-1] if historial_loss else None,
         "tiempo_total_s": time.time() - t0,
     }
+    metricas.update({
+        k: v for k, v in met_perceptuales.items()
+        if k not in metricas
+    })
+
     with open(salida / "metricas.json", "w", encoding="utf-8") as f:
         json.dump(metricas, f, indent=2)
 
     print("\n=== resultado ===", flush=True)
     print(f"  SNR={met_final['snr_db']:.2f} dB  PSNR={met_final['psnr_db']:.2f} dB", flush=True)
+    print(
+        f"  SI-SDR={metricas.get('si_sdr_db', float('nan')):.2f} dB  "
+        f"LSD={metricas.get('lsd_db_promedio', float('nan')):.4f}  "
+        f"Mel-L1={metricas.get('mel_l1_log', float('nan')):.4f}  "
+        f"MRSTFT={metricas.get('mrstft_final', float('nan')):.4f}",
+        flush=True,
+    )
     print(f"  bytes_modelo={bytes_modelo}  bytes_wav={bytes_wav}  "
           f"ratio={metricas['ratio_compresion_vs_wav']:.2f}x", flush=True)
 

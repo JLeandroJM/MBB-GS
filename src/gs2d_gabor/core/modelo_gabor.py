@@ -44,6 +44,8 @@ class GaborAudio1D(nn.Module):
         f_max_hz=None,
         k_sigma=4.0,
         semilla=42,
+        sigma_min_samples=2.0,
+        sigma_max_frac=0.1,
     ):
         super().__init__()
 
@@ -57,8 +59,11 @@ class GaborAudio1D(nn.Module):
 
         # Limites de sigma en samples.
         # min: un par de samples; max: una fraccion de la senal completa.
-        self.log_sigma_min = math.log(2.0)
-        self.log_sigma_max = math.log(max(4.0, self.T * 0.1))
+        sigma_min_cfg = max(1.0, float(sigma_min_samples))
+        sigma_max_cfg = max(4.0, self.T * float(sigma_max_frac))
+
+        self.log_sigma_min = math.log(sigma_min_cfg)
+        self.log_sigma_max = math.log(sigma_max_cfg)
 
         if sigma_inicial_samples is None:
             # Espaciado promedio entre atomos: T / N. La envolvente inicial
