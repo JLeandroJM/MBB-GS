@@ -37,7 +37,10 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from gs2d_gabor.core.modelo_gabor import GaborAudio1D, construir_optimizador_gabor
-from gs2d_gabor.core.perdidas_gabor import loss_gabor, metricas_audio
+from gs2d_gabor.core.perdidas_gabor import (
+    loss_gabor, metricas_audio, mel_l1, mrstft_metric,
+)
+from gs2d_gabor.core import cuantizacion as cuant
 
 
 # ======================================================================
@@ -116,8 +119,8 @@ def guardar_curva(valores, titulo, ylabel, ruta):
 
 
 def tamano_modelo_bytes(modelo):
-    """5 params float32 por atomo."""
-    return modelo.numero_atomos() * 5 * 4
+    """5 params float32 por atomo + 4 bytes de la ganancia global."""
+    return modelo.numero_atomos() * 5 * 4 + 4
 
 
 # ======================================================================
@@ -199,8 +202,14 @@ def main():
         f_max_hz=config.get("f_max_hz"),
         k_sigma=float(config.get("k_sigma", 4.0)),
         semilla=seed,
+        init_modo=config.get("init_modo", "aleatorio"),
+        senal=x,
+        init_n_fft=int(config.get("init_n_fft", 2048)),
+        init_hop=int(config.get("init_hop", 512)),
+        init_alpha=float(config.get("init_alpha", 0.7)),
     )
-    print(f"modelo Gabor: N={modelo.numero_atomos()} atomos  k_sigma={modelo.k_sigma}", flush=True)
+    print(f"modelo Gabor: N={modelo.numero_atomos()} atomos  k_sigma={modelo.k_sigma}  "
+          f"init={config.get('init_modo', 'aleatorio')}", flush=True)
 
     if bool(config.get("forzar_pytorch", False)):
         modelo._forzar_pytorch = True
@@ -264,6 +273,12 @@ def main():
                 flush=True,
             )
 
+    # === gain matching post-hoc (garantiza escala/polaridad global -> SNR~SI-SDR) ===
+    with torch.no_grad():
+        x_hat = modelo.render()
+        g = torch.dot(x_hat, x) / torch.dot(x_hat, x_hat).clamp_min(1e-12)
+        modelo.gain.data = modelo.gain.data * g
+
     # === reconstruccion final ===
     with torch.no_grad():
         x_hat = modelo.render()
@@ -271,13 +286,33 @@ def main():
     x_hat_np = x_hat.detach().cpu().numpy()
     guardar_wav(salida / "recon.wav", sr, x_hat_np)
 
+    # === cuantizacion: re-render degradado por esquema y re-medir ===
+    bloque_cuant = {}
+    bytes_wav = T * 2  # int16 mono
+    for nombre_esq, esquema in cuant.ESQUEMAS.items():
+        x_hat_q = cuant.render_cuantizado(modelo, esquema)
+        mq = metricas_audio(x_hat_q, x)
+        bytes_mod_q = modelo.numero_atomos() * cuant.bytes_por_atomo(esquema) + 4
+        bloque_cuant[nombre_esq] = {
+            "bytes_por_atomo": cuant.bytes_por_atomo(esquema),
+            "bytes_modelo": bytes_mod_q,
+            "ratio_compresion_vs_wav": bytes_wav / max(1, bytes_mod_q),
+            "snr_db": mq["snr_db"],
+            "si_sdr_db": mq["si_sdr_db"],
+            "mse_wave": mq["mse_wave"],
+        }
+
     # === metricas + compresion ===
     bytes_modelo = tamano_modelo_bytes(modelo)
-    bytes_wav = T * 2  # int16 mono
     metricas = {
         "snr_db": met_final["snr_db"],
         "psnr_db": met_final["psnr_db"],
         "mse_wave": met_final["mse_wave"],
+        "si_sdr_db": met_final.get("si_sdr_db"),
+        "lsd_db": met_final.get("lsd_db"),
+        "mel_l1": mel_l1(x_hat, x, sr),
+        "mr_stft": mrstft_metric(x_hat, x, ffts=config.get("mrstft_ffts", [512, 1024, 2048])),
+        "cuantizacion": bloque_cuant,
         "n_atomos": modelo.numero_atomos(),
         "samples": T,
         "sr": sr,
@@ -285,6 +320,7 @@ def main():
         "bytes_modelo": bytes_modelo,
         "bytes_wav_int16": bytes_wav,
         "ratio_compresion_vs_wav": bytes_wav / max(1, bytes_modelo),
+        "bitrate_kbps": bytes_modelo * 8 / (T / sr) / 1000.0,
         "loss_final": historial_loss[-1] if historial_loss else None,
         "tiempo_total_s": time.time() - t0,
     }
@@ -292,7 +328,14 @@ def main():
         json.dump(metricas, f, indent=2)
 
     print("\n=== resultado ===", flush=True)
-    print(f"  SNR={met_final['snr_db']:.2f} dB  PSNR={met_final['psnr_db']:.2f} dB", flush=True)
+    _sisdr = met_final.get("si_sdr_db")
+    _lsd = met_final.get("lsd_db")
+    print(f"  SNR={met_final['snr_db']:.2f} dB  PSNR={met_final['psnr_db']:.2f} dB  "
+          f"SI-SDR={(_sisdr if _sisdr is not None else float('nan')):.2f} dB  "
+          f"LSD={(_lsd if _lsd is not None else float('nan')):.3f} dB", flush=True)
+    _mel = metricas.get("mel_l1")
+    print(f"  Mel-L1={(_mel if _mel is not None else float('nan')):.4f}  "
+          f"MR-STFT={metricas['mr_stft']:.4f}", flush=True)
     print(f"  bytes_modelo={bytes_modelo}  bytes_wav={bytes_wav}  "
           f"ratio={metricas['ratio_compresion_vs_wav']:.2f}x", flush=True)
 
