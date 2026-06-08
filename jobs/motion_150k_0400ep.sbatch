@@ -1,11 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=fase1_edge
+#SBATCH --job-name=motion_150k_0400ep
 #SBATCH --partition=gpu
+#SBATCH --exclude=ag001
 #SBATCH --gres=shard:6
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=32G
-#SBATCH --time=12:00:00
+#SBATCH --mem=64G
+#SBATCH --time=10:00:00
 #SBATCH --output=logs_slurm/%x_%j.out
 #SBATCH --error=logs_slurm/%x_%j.err
 #SBATCH --mail-type=END,FAIL
@@ -14,7 +15,6 @@
 set -e
 cd $HOME/MBB-GS
 
-# Modulos confirmados en Khipu (nombres reales del 'module avail').
 module load cuda/12.8
 module load gnu12/12.4.0
 module load miniconda/3.0
@@ -29,7 +29,7 @@ python -c "import torch; print('torch', torch.__version__, 'cuda_ok', torch.cuda
 echo "=== START $(date) ==="
 
 python scripts/train.py \
-    --config configs/fase1_edge.json \
-    --nombre-experimento fase1_edge
+    --config configs/motion_150k_0400ep.json \
+    --nombre-experimento motion_150k_0400ep
 
 echo "=== END $(date) ==="

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=fase1_edge
 #SBATCH --partition=gpu
-#SBATCH --gres=shard:6
+#SBATCH --gres=shard:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
@@ -15,12 +15,15 @@ set -e
 cd $HOME/MBB-GS
 
 # Modulos confirmados en Khipu (nombres reales del 'module avail').
+
 module load cuda/12.8
 module load gnu12/12.4.0
 module load miniconda/3.0
-eval "$(conda shell.bash hook)"
 
+# Activa el entorno conda creado en la guia de instalacion.
+eval "$(conda shell.bash hook)"
 conda activate mbb-gs
+
 
 echo "=== INFO GPU ==="
 nvidia-smi

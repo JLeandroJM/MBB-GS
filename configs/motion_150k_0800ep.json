@@ -1,6 +1,6 @@
 {
-  "_comentario": "Ablacion sistematica de loss. Cambiar 'clip' y 'max_frames' al video de prueba real.",
-  "nombre_experimento": "fase1_motion",
+  "_comentario": "Barrido epochs con motion+150k. barrido epochs - punto 2 (referencia, igual al ganador F1)",
+  "nombre_experimento": "motion_150k_0800ep",
   "clip": "video_clips",
   "video_mp4": null,
   "n_frames_extraer": null,
@@ -13,7 +13,7 @@
   "max_frames": 600,
   "device": "cuda",
   "seed": 42,
-  "n_gaussianas_inicial": 100000,
+  "n_gaussianas_inicial": 150000,
   "inicializar_color_desde_frame0": true,
   "escala_inicial_px": 2.5,
   "grados": {
@@ -83,7 +83,7 @@
   "frames_en_cpu": true,
   "frames_en_gpu_uint8": false,
   "evitar_render_completo_en_train": true,
-  "sobreescribir_salida": false,
+  "sobreescribir_salida": true,
   "calcular_metricas": true,
   "usar_ssim": true,
   "usar_lpips": true,
@@ -91,7 +91,7 @@
   "guardar_visualizaciones": true,
   "guardar_gif": true,
   "guardar_frames_rasterizados": true,
-  "guardar_checkpoints_intermedios": false,
+  "guardar_checkpoints_intermedios": true,
   "guardar_verificacion_visual": false,
   "calidades_avif": [
     80,

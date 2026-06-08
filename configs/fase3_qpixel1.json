@@ -83,7 +83,7 @@
   "frames_en_cpu": true,
   "frames_en_gpu_uint8": false,
   "evitar_render_completo_en_train": true,
-  "sobreescribir_salida": false,
+  "sobreescribir_salida": true,
   "calcular_metricas": true,
   "usar_ssim": true,
   "usar_lpips": true,
@@ -91,7 +91,7 @@
   "guardar_visualizaciones": true,
   "guardar_gif": true,
   "guardar_frames_rasterizados": true,
-  "guardar_checkpoints_intermedios": false,
+  "guardar_checkpoints_intermedios": true,
   "guardar_verificacion_visual": false,
   "calidades_avif": [
     80,

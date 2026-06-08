@@ -75,17 +75,6 @@ FASES = {
     "todas": FASE_1 + FASE_2 + FASE_3,
 }
 
-FASE_1 = [
-    "configs/fase1_combo.json",   # L1 + DSSIM (referencia, esperado favorito)
-]
-
-FASES = {
-    "fase1": FASE_1,
-    #"fase2": FASE_2,
-    #"fase3": FASE_3,
-    #"todas": FASE_1 + FASE_2 + FASE_3,
-}
-
 # Cambia esto para correr otra fase. Tambien acepta primer argv.
 FASE_ACTIVA = "fase1"
 

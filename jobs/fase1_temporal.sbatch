@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=fase1_edge
+#SBATCH --job-name=fase1_temporal
 #SBATCH --partition=gpu
 #SBATCH --gres=shard:6
 #SBATCH --ntasks=1
@@ -29,7 +29,7 @@ python -c "import torch; print('torch', torch.__version__, 'cuda_ok', torch.cuda
 echo "=== START $(date) ==="
 
 python scripts/train.py \
-    --config configs/fase1_edge.json \
-    --nombre-experimento fase1_edge
+    --config configs/fase1_temporal.json \
+    --nombre-experimento fase1_temporal
 
 echo "=== END $(date) ==="
