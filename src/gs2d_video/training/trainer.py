@@ -364,6 +364,10 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     guardar_ckpts = bool(config.get("guardar_checkpoints_intermedios", False))
     guardar_verif = bool(config.get("guardar_verificacion_visual", False))
 
+    # Estado para el snapshot de evolucion de mu (gaussianas marcadas fijas).
+    n_gauss_marcadas = int(config.get("viz_gaussianas_marcadas_n", 0))
+    _estado_viz_mu = {"idx_marcadas": None}
+
     # ============================================================
     # Historial
     # ============================================================
@@ -637,6 +641,16 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
                     config,
                 )
 
+            if carpeta_salida is not None and n_gauss_marcadas > 0:
+                _guardar_snapshot_mu(
+                    modelo,
+                    matrices_base,
+                    carpeta_salida,
+                    epoch + 1,
+                    _estado_viz_mu,
+                    n_gauss_marcadas,
+                )
+
         else:
             log_cada = max(1, chk_each // 5)
 
@@ -690,7 +704,14 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
 @torch.no_grad()
 def _guardar_verificacion_visual(modelo, frames, matrices_base, carpeta, epoch, config):
     """
-    Renderiza primer y ultimo frame usando el rasterizador del config.
+    Renderiza una lista configurable de frames usando el rasterizador del config
+    y los guarda como PNG ligeros. Sirve para la "tira de convergencia": el mismo
+    frame visto en epoch 400, 800, ... sin tener que guardar checkpoints .pt.
+
+    Frames a rasterizar:
+      - config["viz_frames_evolutivos"]: lista de indices de frame (p.ej.
+        [0, 240, 479]). Si no esta, default = [primer, ultimo].
+
     Compatible con frames en CPU o GPU.
     """
     from PIL import Image
@@ -700,7 +721,19 @@ def _guardar_verificacion_visual(modelo, frames, matrices_base, carpeta, epoch, 
     sub = os.path.join(carpeta, "verificacion")
     os.makedirs(sub, exist_ok=True)
 
-    for nombre, j in [("primer", 0), ("ultimo", n_frames - 1)]:
+    indices = config.get("viz_frames_evolutivos")
+    if indices:
+        vistos = []
+        pares = []
+        for i in indices:
+            j = int(i)
+            if 0 <= j < n_frames and j not in vistos:
+                vistos.append(j)
+                pares.append((f"frame{j:04d}", j))
+    else:
+        pares = [("frame0000", 0), (f"frame{n_frames - 1:04d}", n_frames - 1)]
+
+    for nombre, j in pares:
         params_j = modelo.evaluar_en_frame(j, matrices_base)
         r = _rasterizar_segun_config(params_j, H, W, config).clamp(0, 1)
 
@@ -708,5 +741,50 @@ def _guardar_verificacion_visual(modelo, frames, matrices_base, carpeta, epoch, 
             r = r.detach().cpu().numpy()
 
         Image.fromarray((r * 255).astype(np.uint8)).save(
-            os.path.join(sub, f"epoch{epoch:04d}_{nombre}_frame.png")
+            os.path.join(sub, f"epoch{epoch:04d}_{nombre}.png")
         )
+
+
+@torch.no_grad()
+def _guardar_snapshot_mu(modelo, matrices_base, carpeta, epoch, estado_viz, n_marcadas):
+    """
+    Guarda las trayectorias mu_i(t) de un set FIJO de gaussianas marcadas, como
+    archivo .npz ligero (KB). Llamado en cada checkpoint -> permite ver como
+    EVOLUCIONA la posicion de esas gaussianas a lo largo del entrenamiento
+    (epoch 400 vs 800 vs ... vs final) sin guardar checkpoints .pt pesados.
+
+    Las gaussianas marcadas se fijan UNA sola vez (top-opacidad del primer
+    snapshot) y se reusan en todos los epochs siguientes, para que la gaussiana
+    i sea siempre la misma y las trayectorias sean comparables.
+
+    estado_viz: dict mutable que cachea {"idx_marcadas": tensor|None} entre llamadas.
+    """
+    import numpy as np
+
+    grado_mu = modelo.grados["mu"]
+    grado_op = modelo.grados["opacity"]
+    B_mu = matrices_base[grado_mu]
+    B_op = matrices_base[grado_op]
+
+    coefs_mu = torch.cat([modelo.mu_a0, modelo.mu_high], dim=-1)   # (N, 2, q+1)
+    mu_t = coefs_mu @ B_mu.T                                        # (N, 2, T)
+
+    if estado_viz.get("idx_marcadas") is None:
+        coefs_op = torch.cat([modelo.opacity_a0, modelo.opacity_high], dim=-1)
+        op_t = torch.sigmoid(coefs_op @ B_op.T).squeeze(1)         # (N, T)
+        op_mean = op_t.mean(dim=-1)
+        k = min(int(n_marcadas), op_mean.shape[0])
+        idx = torch.argsort(op_mean, descending=True)[:k]
+        estado_viz["idx_marcadas"] = idx.detach().cpu()
+
+    idx = estado_viz["idx_marcadas"].to(mu_t.device)
+    mu_sel = mu_t[idx].detach().cpu().numpy()                       # (k, 2, T) -> (fila, col)
+
+    sub = os.path.join(carpeta, "evol_mu")
+    os.makedirs(sub, exist_ok=True)
+    np.savez(
+        os.path.join(sub, f"epoch{epoch:04d}.npz"),
+        idx=estado_viz["idx_marcadas"].numpy(),
+        mu=mu_sel,
+        epoch=int(epoch),
+    )
