@@ -49,6 +49,7 @@ class GaborAudio1D(nn.Module):
         init_n_fft=2048,
         init_hop=512,
         init_alpha=0.7,
+        usar_modulacion=True,
     ):
         super().__init__()
 
@@ -57,6 +58,11 @@ class GaborAudio1D(nn.Module):
         self.sr = int(sr)
         self.device = device
         self.k_sigma = float(k_sigma)
+        # usar_modulacion=False -> GAUSSIANAS PURAS (experimento de ablacion):
+        # sin el factor cos, cada primitiva es A*exp(-(t-mu)^2/2sigma^2), con solo
+        # 3 parametros (mu, sigma, A). Sirve para validar empiricamente que la
+        # modulacion coseno (Gabor) hace falta por Nyquist.
+        self.usar_modulacion = bool(usar_modulacion)
 
         g = torch.Generator(device="cpu").manual_seed(int(semilla))
 
@@ -104,6 +110,13 @@ class GaborAudio1D(nn.Module):
         # phi: fase uniforme.
         phi_init = torch.rand(self.N, generator=g) * (2.0 * math.pi)
         self.phi = nn.Parameter(phi_init.to(device))
+
+        # Gaussianas puras: freq y fase NO se entrenan (en render se fuerzan a 0,
+        # cos(0)=1). Se congelan para que el optimizador los ignore y no cuenten
+        # como parametros del modelo.
+        if not self.usar_modulacion:
+            self.freq_raw.requires_grad_(False)
+            self.phi.requires_grad_(False)
 
         # ganancia global (1 escalar, +4 bytes). Resuelve de forma diferenciable
         # el grado de libertad de escala/POLARIDAD que el SI-SDR loss deja suelto:
@@ -192,6 +205,11 @@ class GaborAudio1D(nn.Module):
         """Devuelve x_hat [T] reconstruido."""
         mu, sigma, amp, fnorm, phi = self.activar_parametros()
 
+        # Gaussianas puras: fnorm=0 y phi=0 -> cos(0)=1 -> A*exp(...) sin oscilar.
+        if not self.usar_modulacion:
+            fnorm = torch.zeros_like(fnorm)
+            phi = torch.zeros_like(phi)
+
         usar_cuda = (not self._forzar_pytorch) and self.mu_t.is_cuda and cuda_disponible()
 
         if usar_cuda:
@@ -208,6 +226,16 @@ class GaborAudio1D(nn.Module):
 
     def numero_atomos(self):
         return self.N
+
+    def params_activos(self):
+        """Nombres de los parametros por-atomo que se almacenan/cuantizan.
+        Gabor: 5 (mu, sigma, amp, freq, fase). Gaussiana pura: 3 (mu, sigma, amp)."""
+        if self.usar_modulacion:
+            return ["mu_t", "log_sigma", "amp", "freq_raw", "phi"]
+        return ["mu_t", "log_sigma", "amp"]
+
+    def params_por_atomo(self):
+        return len(self.params_activos())
 
     def frecuencias_hz(self):
         """fnorm activado -> Hz, para inspeccion."""
@@ -227,6 +255,7 @@ class GaborAudio1D(nn.Module):
             "T": self.T,
             "sr": self.sr,
             "k_sigma": self.k_sigma,
+            "usar_modulacion": self.usar_modulacion,
         }
 
 
@@ -255,13 +284,18 @@ def construir_optimizador_gabor(modelo, lrs=None):
     def lr(clave):
         return float(lrs.get(clave, defaults[clave]))
 
+    candidatos = [
+        (modelo.mu_t,     "mu_t"),
+        (modelo.log_sigma, "log_sigma"),
+        (modelo.amp,      "amp"),
+        (modelo.freq_raw, "freq_raw"),
+        (modelo.phi,      "phi"),
+        (modelo.gain,     "gain"),
+    ]
+    # Omite parametros congelados (p.ej. freq_raw/phi en gaussianas puras).
     grupos = [
-        {"params": [modelo.mu_t],     "lr": lr("mu_t"),     "name": "mu_t"},
-        {"params": [modelo.log_sigma], "lr": lr("log_sigma"), "name": "log_sigma"},
-        {"params": [modelo.amp],      "lr": lr("amp"),      "name": "amp"},
-        {"params": [modelo.freq_raw], "lr": lr("freq_raw"), "name": "freq_raw"},
-        {"params": [modelo.phi],      "lr": lr("phi"),      "name": "phi"},
-        {"params": [modelo.gain],     "lr": lr("gain"),     "name": "gain"},
+        {"params": [p], "lr": lr(nombre), "name": nombre}
+        for p, nombre in candidatos if p.requires_grad
     ]
 
     try:

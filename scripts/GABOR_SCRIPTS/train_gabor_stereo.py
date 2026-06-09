@@ -47,7 +47,7 @@ from gs2d_gabor.core import cuantizacion as cuant
 # IO de audio (estereo)
 # ======================================================================
 
-def cargar_wav_estereo(ruta, sr_objetivo=None, max_segundos=None):
+def cargar_wav_estereo(ruta, sr_objetivo=None, max_segundos=None, inicio_segundos=0.0):
     """Carga WAV estereo -> (sr, xL, xR) float32 en [-1, 1]."""
     from scipy.io import wavfile
     from scipy import signal
@@ -82,6 +82,12 @@ def cargar_wav_estereo(ruta, sr_objetivo=None, max_segundos=None):
         xL = signal.resample_poly(xL, up, down).astype(np.float32)
         xR = signal.resample_poly(xR, up, down).astype(np.float32)
         sr = int(sr_objetivo)
+
+    # offset: recorta desde inicio_segundos (para tomar el medio de la cancion)
+    if inicio_segundos and float(inicio_segundos) > 0:
+        ini = int(float(inicio_segundos) * sr)
+        xL = xL[ini:]
+        xR = xR[ini:]
 
     if max_segundos is not None:
         n = int(float(max_segundos) * sr)
@@ -238,6 +244,7 @@ def main():
 
     sr, xL_np, xR_np = cargar_wav_estereo(
         ruta_audio, sr_objetivo=config.get("sr"), max_segundos=config.get("max_segundos"),
+        inicio_segundos=config.get("inicio_segundos", 0.0),
     )
     T = xL_np.shape[0]
     xL = torch.from_numpy(xL_np).to(device=device, dtype=torch.float32)

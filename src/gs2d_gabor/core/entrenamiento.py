@@ -57,6 +57,7 @@ def entrenar_canal(x, sr, config, device, semilla, etiqueta=""):
         init_n_fft=int(config.get("init_n_fft", 2048)),
         init_hop=int(config.get("init_hop", 512)),
         init_alpha=float(config.get("init_alpha", 0.7)),
+        usar_modulacion=bool(config.get("usar_modulacion", True)),
     )
     print(f"{etiqueta} modelo Gabor: N={modelo.numero_atomos()} atomos  "
           f"k_sigma={modelo.k_sigma}", flush=True)

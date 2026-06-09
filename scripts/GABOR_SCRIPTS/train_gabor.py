@@ -47,7 +47,8 @@ from gs2d_gabor.core import cuantizacion as cuant
 # IO de audio
 # ======================================================================
 
-def cargar_wav_mono(ruta, sr_objetivo=None, max_segundos=None, canal="mono"):
+def cargar_wav_mono(ruta, sr_objetivo=None, max_segundos=None, canal="mono",
+                    inicio_segundos=0.0):
     from scipy.io import wavfile
     from scipy import signal
 
@@ -79,6 +80,11 @@ def cargar_wav_mono(ruta, sr_objetivo=None, max_segundos=None, canal="mono"):
         down = int(sr) // gcd
         x = signal.resample_poly(x, up, down).astype(np.float32)
         sr = int(sr_objetivo)
+
+    # offset: recorta desde inicio_segundos (para tomar el medio de la cancion)
+    if inicio_segundos and float(inicio_segundos) > 0:
+        ini = int(float(inicio_segundos) * sr)
+        x = x[ini:]
 
     if max_segundos is not None:
         n = int(float(max_segundos) * sr)
@@ -119,8 +125,8 @@ def guardar_curva(valores, titulo, ylabel, ruta):
 
 
 def tamano_modelo_bytes(modelo):
-    """5 params float32 por atomo + 4 bytes de la ganancia global."""
-    return modelo.numero_atomos() * 5 * 4 + 4
+    """params float32 por atomo (5 Gabor / 3 gaussiana pura) + 4 bytes del gain."""
+    return modelo.numero_atomos() * modelo.params_por_atomo() * 4 + 4
 
 
 # ======================================================================
@@ -162,6 +168,7 @@ def main():
         sr_objetivo=config.get("sr"),
         max_segundos=config.get("max_segundos"),
         canal=config.get("canal", "mono"),
+        inicio_segundos=config.get("inicio_segundos", 0.0),
     )
     x = torch.from_numpy(x_np).to(device=device, dtype=torch.float32)
     T = x.shape[0]
@@ -207,6 +214,7 @@ def main():
         init_n_fft=int(config.get("init_n_fft", 2048)),
         init_hop=int(config.get("init_hop", 512)),
         init_alpha=float(config.get("init_alpha", 0.7)),
+        usar_modulacion=bool(config.get("usar_modulacion", True)),
     )
     print(f"modelo Gabor: N={modelo.numero_atomos()} atomos  k_sigma={modelo.k_sigma}  "
           f"init={config.get('init_modo', 'aleatorio')}", flush=True)
@@ -289,12 +297,13 @@ def main():
     # === cuantizacion: re-render degradado por esquema y re-medir ===
     bloque_cuant = {}
     bytes_wav = T * 2  # int16 mono
+    params_act = modelo.params_activos()
     for nombre_esq, esquema in cuant.ESQUEMAS.items():
-        x_hat_q = cuant.render_cuantizado(modelo, esquema)
+        x_hat_q = cuant.render_cuantizado(modelo, esquema, params=params_act)
         mq = metricas_audio(x_hat_q, x)
-        bytes_mod_q = modelo.numero_atomos() * cuant.bytes_por_atomo(esquema) + 4
+        bytes_mod_q = modelo.numero_atomos() * cuant.bytes_por_atomo(esquema, params_act) + 4
         bloque_cuant[nombre_esq] = {
-            "bytes_por_atomo": cuant.bytes_por_atomo(esquema),
+            "bytes_por_atomo": cuant.bytes_por_atomo(esquema, params_act),
             "bytes_modelo": bytes_mod_q,
             "ratio_compresion_vs_wav": bytes_wav / max(1, bytes_mod_q),
             "snr_db": mq["snr_db"],

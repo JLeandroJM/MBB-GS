@@ -31,20 +31,26 @@ ESQUEMAS = {
 }
 
 
-def bytes_por_atomo(esquema):
-    return sum(_BYTES[esquema[p]] for p in _PARAMS)
+def bytes_por_atomo(esquema, params=None):
+    """Bytes por atomo segun el esquema. `params` limita a los parametros
+    realmente almacenados (3 en gaussianas puras, 5 en Gabor)."""
+    params = params or _PARAMS
+    return sum(_BYTES[esquema[p]] for p in params)
 
 
 @torch.no_grad()
-def render_cuantizado(modelo, esquema):
+def render_cuantizado(modelo, esquema, params=None):
     """
     Aplica la cuantizacion del `esquema` a los parametros RAW del modelo,
     renderiza la waveform con esos valores degradados y RESTAURA los originales.
-    Devuelve x_hat [T] (detached). No modifica el modelo de forma permanente.
+    `params` limita a los parametros almacenados (gaussianas puras no tienen
+    freq/fase). Devuelve x_hat [T] (detached). No modifica el modelo de forma
+    permanente.
     """
-    originales = {p: getattr(modelo, p).detach().clone() for p in _PARAMS}
+    params = params or _PARAMS
+    originales = {p: getattr(modelo, p).detach().clone() for p in params}
     try:
-        for p in _PARAMS:
+        for p in params:
             tensor = getattr(modelo, p)
             modo = esquema[p]
             if modo == "fp16":
@@ -54,6 +60,6 @@ def render_cuantizado(modelo, esquema):
             # "fp32": sin cambios
         x_hat = modelo.render().detach()
     finally:
-        for p in _PARAMS:
+        for p in params:
             getattr(modelo, p).data = originales[p]
     return x_hat
