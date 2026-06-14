@@ -50,6 +50,34 @@ def construir_matriz_chebyshev(n_frames, grado_max, device='cpu', dtype=torch.fl
     return B.to(dtype=dtype, device=device)
 
 
+def construir_matriz_chebyshev_en_t(t_norm, grado_max, device='cpu', dtype=torch.float32):
+    """
+    Igual que construir_matriz_chebyshev pero evaluando en instantes t_norm
+    ARBITRARIOS ya en [-1, 1] (no necesariamente los nodos de los frames enteros).
+
+    Uso clave: SLOW-MOTION / frame interpolation. Para generar un frame "entre"
+    el frame j y j+1 de un clip de n_frames, su t normalizado es:
+        t = 2 * (j + alpha) / (n_frames - 1) - 1,   alpha in (0, 1)
+    Como los parametros son polinomios continuos, basta evaluarlos en esos t.
+
+    Args:
+        t_norm    : tensor 1D de instantes en [-1, 1].
+        grado_max : grado maximo de la base.
+
+    Devuelve B (len(t_norm), grado_max+1) con B[i, k] = T_k(t_norm[i]).
+    """
+    t = torch.as_tensor(t_norm, dtype=torch.float64).reshape(-1)
+    m = t.shape[0]
+    B = torch.empty(m, grado_max + 1, dtype=torch.float64)
+    B[:, 0] = 1.0
+    if grado_max >= 1:
+        B[:, 1] = t
+    for k in range(2, grado_max + 1):
+        B[:, k] = 2.0 * t * B[:, k - 1] - B[:, k - 2]
+
+    return B.to(dtype=dtype, device=device)
+
+
 
 # ===========================================================================
 # tests

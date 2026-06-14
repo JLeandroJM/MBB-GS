@@ -532,6 +532,21 @@ def main():
 
     _guardar_info_clip(salida, config, clip, n_frames, H, W, seed)
 
+    # Holdout temporal: registrar que frames se supervisan vs cuales se
+    # reconstruyen (para separar metricas train/holdout en el analisis post).
+    if config.get("holdout"):
+        from gs2d_video.training.holdout import generar_indices_supervisados
+        sup, hold = generar_indices_supervisados(n_frames, config["holdout"], seed=seed)
+        with open(os.path.join(salida, "holdout_indices.json"), "w", encoding="utf-8") as f:
+            json.dump({
+                "holdout_cfg": config["holdout"],
+                "n_frames": n_frames,
+                "supervisados": sup,
+                "holdout": hold,
+            }, f, indent=2)
+        print(f"[train] holdout: supervisados={len(sup)} holdout={len(hold)} "
+              f"-> holdout_indices.json", flush=True)
+
     # === modelo y matrices ==================================================
     grados = config["grados"]
     grados_distintos = sorted(set(grados.values()))

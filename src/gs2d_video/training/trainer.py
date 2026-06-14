@@ -249,6 +249,22 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         )
 
     # ============================================================
+    # Holdout temporal: que frames se SUPERVISAN (el resto se reconstruye
+    # por el polinomio y sirve de test de interpolacion temporal).
+    # ============================================================
+    indices_supervisados = None
+    holdout_cfg = config.get("holdout")
+    if holdout_cfg:
+        from gs2d_video.training.holdout import (
+            generar_indices_supervisados,
+            describir_holdout,
+        )
+        indices_supervisados, _idx_holdout = generar_indices_supervisados(
+            n_frames, holdout_cfg, seed=int(config.get("seed", 42))
+        )
+        print(f"[trainer] {describir_holdout(n_frames, holdout_cfg, int(config.get('seed', 42)))}", flush=True)
+
+    # ============================================================
     # Loss
     # ============================================================
     tipo_loss = str(config.get("tipo_loss", "baseline")).lower().strip()
@@ -394,7 +410,11 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         t_epoch = time.time()
         optimizer.zero_grad(set_to_none=True)
 
-        if muestreador_temporal is not None:
+        if indices_supervisados is not None:
+            # Holdout activo: cada epoch supervisa EXACTAMENTE el subconjunto fijo.
+            # El resto de frames nunca entra al loss (se reconstruye por el polinomio).
+            idx_epoch = list(indices_supervisados)
+        elif muestreador_temporal is not None:
             idx_epoch = muestreador_temporal.siguiente_epoch()
         else:
             idx_epoch = _indices_epoch(n_frames, frames_por_epoch)
