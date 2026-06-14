@@ -54,22 +54,28 @@ def cargar_wav_mono(ruta, sr_objetivo=None, max_segundos=None, canal="mono",
 
     sr, data = wavfile.read(str(ruta))
 
+    # 1) Normalizar el dtype a float [-1,1] PRIMERO. (Si se hace el downmix antes,
+    #    .mean() convierte int16 -> float64 y la normalizacion se saltaria, dejando
+    #    valores de miles que el clip a [-1,1] satura -> audio destruido.)
+    if data.dtype == np.int16:
+        data = data.astype(np.float32) / 32768.0
+    elif data.dtype == np.int32:
+        data = data.astype(np.float32) / 2147483648.0
+    elif data.dtype == np.uint8:
+        data = (data.astype(np.float32) - 128.0) / 128.0
+    else:
+        data = data.astype(np.float32)
+
+    # 2) Downmix / seleccion de canal DESPUES (ya en float normalizado).
     if data.ndim == 2:
         if canal == "left":
-            data = data[:, 0]
+            x = data[:, 0]
         elif canal == "right":
-            data = data[:, 1]
+            x = data[:, 1]
         else:
-            data = data.mean(axis=1)
-
-    if data.dtype == np.int16:
-        x = data.astype(np.float32) / 32768.0
-    elif data.dtype == np.int32:
-        x = data.astype(np.float32) / 2147483648.0
-    elif data.dtype == np.uint8:
-        x = (data.astype(np.float32) - 128.0) / 128.0
+            x = data.mean(axis=1)
     else:
-        x = data.astype(np.float32)
+        x = data
 
     x = np.nan_to_num(x)
     x = np.clip(x, -1.0, 1.0)
