@@ -11,6 +11,9 @@ y separa las metricas en:
 
 La brecha TRAIN vs HOLDOUT mide cuanto generaliza la interpolacion polinomica.
 
+
+
+
 Dos modos:
   1) un experimento:    --exp outputs_khipu/dvd_20s_holdout_mult2_l1dssim
   2) curva (varios):    --curva outputs_khipu/dvd_20s_holdout_curva_mult2_l1dssim \\
