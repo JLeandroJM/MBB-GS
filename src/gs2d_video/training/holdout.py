@@ -80,6 +80,16 @@ def generar_indices_supervisados(n_frames, holdout_cfg, seed=42):
     else:
         raise ValueError(f"holdout modo desconocido: {modo!r}")
 
+    # Anclar bordes: forzar que los primeros K y ultimos K frames SIEMPRE se
+    # supervisen (nunca sean holdout). Fija los extremos del intervalo temporal
+    # t in [-1, 1], donde el polinomio de grado alto oscila (efecto Runge) si no
+    # tiene datos. Sin esto, los frames holdout de los extremos se reconstruyen
+    # pesimo (p.ej. frame 1 y frame N-1).
+    anclar = int(holdout_cfg.get("anclar_bordes", 0))
+    if anclar > 0:
+        bordes = set(range(0, min(anclar, n))) | set(range(max(0, n - anclar), n))
+        sup = sup | bordes
+
     supervisados = sorted(sup)
     holdout = sorted(todos - sup)
 
