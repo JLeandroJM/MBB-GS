@@ -56,6 +56,11 @@ def _leer_metricas(exp):
     return filas, sup_idx, hold_idx, hold
 
 
+
+
+
+
+
 def _prom(filas, indices, campo):
     vals = []
     for j in indices:
