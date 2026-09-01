@@ -75,3 +75,25 @@ def _tests():
 
 if __name__ == "__main__":
     _tests()
+
+
+
+def construir_matriz_monomial(n_frames, grado_max, device='cpu', dtype=torch.float32):
+    """
+    Matriz B (n_frames, grado_max+1) en base monomial.
+    B[j, k] = t_j^k, con t_j normalizado en [-1, 1].
+
+    Se usa para comparar contra Chebyshev en las mismas condiciones.
+    """
+    if n_frames < 2:
+        t = torch.zeros(n_frames, dtype=torch.float64)
+    else:
+        idx = torch.arange(n_frames, dtype=torch.float64)
+        t = 2.0 * (idx / (n_frames - 1)) - 1.0
+
+    B = torch.empty(n_frames, grado_max + 1, dtype=torch.float64)
+    B[:, 0] = 1.0
+    for k in range(1, grado_max + 1):
+        B[:, k] = B[:, k - 1] * t
+
+    return B.to(dtype=dtype, device=device)

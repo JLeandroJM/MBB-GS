@@ -68,7 +68,21 @@ FASE_3 = [
     "configs/fase3_qpixel4.json",    # exponente_pixel=4
 ]
 
+FASE_BASES = [
+    "configs/comparacion_bases/thriller_chebyshev_8k_360ep.json",
+    "configs/comparacion_bases/thriller_monomial_8k_360ep.json",
+]
+
+FASE_CAPACIDAD = [
+    "configs/comparacion_capacidad/thriller_cheby_12k_gbase_300ep.json",
+    "configs/comparacion_capacidad/thriller_cheby_16k_gbase_300ep.json",
+    "configs/comparacion_capacidad/thriller_cheby_8k_g36_300ep.json",
+    "configs/comparacion_capacidad/thriller_cheby_8k_g45_300ep.json",
+]
+
 FASES = {
+    "capacidad": FASE_CAPACIDAD,
+    "bases": FASE_BASES,
     "fase1": FASE_1,
     "fase2": FASE_2,
     "fase3": FASE_3,

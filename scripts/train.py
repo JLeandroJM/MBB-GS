@@ -29,7 +29,7 @@ SRC = RAIZ / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from gs2d_video.core.bases import construir_matriz_chebyshev
+from gs2d_video.core.bases import construir_matriz_chebyshev, construir_matriz_monomial
 from gs2d_video.core.modelo import GaussianasPolinomial2D
 from gs2d_video.core.optimizador import construir_optimizador
 from gs2d_video.core.pruning_post import prunear_post
@@ -535,11 +535,25 @@ def main():
     # === modelo y matrices ==================================================
     grados = config["grados"]
     grados_distintos = sorted(set(grados.values()))
+    base_temporal = str(config.get("base_temporal", "chebyshev")).lower().strip()
+
+    if base_temporal in ("chebyshev", "cheby", "cheb"):
+        construir_matriz_base = construir_matriz_chebyshev
+        base_temporal = "chebyshev"
+    elif base_temporal in ("monomial", "mono"):
+        construir_matriz_base = construir_matriz_monomial
+        base_temporal = "monomial"
+    else:
+        raise ValueError(
+            f"base_temporal desconocida: {base_temporal!r}. "
+            "Usa 'chebyshev' o 'monomial'."
+        )
+
     matrices_base = {
-        g: construir_matriz_chebyshev(n_frames, g, device=device, dtype=torch.float32)
+        g: construir_matriz_base(n_frames, g, device=device, dtype=torch.float32)
         for g in grados_distintos
     }
-    print(f"matrices chebyshev construidas para grados: {grados_distintos}", flush=True)
+    print(f"matrices {base_temporal} construidas para grados: {grados_distintos}", flush=True)
 
     usar_frame0_color = bool(config.get("inicializar_color_desde_frame0", True))
 

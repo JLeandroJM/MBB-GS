@@ -1,29 +1,19 @@
 {
-  "_comentario": "SMOKE TEST audiovisual: 10 segundos, 30 fps, 720p, 1 epoch. El pipeline desactiva pruning_post antiguo y luego ejecuta pruning dinámico.",
-  "nombre_experimento": "rockyourbody_10s_1ep_video",
-  "clip": "rockyourbody_10s_1ep_clip",
+  "base_temporal": "chebyshev",
+  "clip": "thriller_clips",
   "video_mp4": null,
   "n_frames_extraer": null,
   "fps_extraccion": null,
   "resolucion_extraccion": [
-    720,
-    1280
+    160,
+    160
   ],
   "forzar_extraccion": false,
-  "max_frames": 300,
+  "max_frames": 120,
   "device": "cuda",
   "seed": 42,
-  "n_gaussianas_inicial": 155000,
   "inicializar_color_desde_frame0": true,
   "escala_inicial_px": 2.5,
-  "grados": {
-    "mu": 110,
-    "opacity": 90,
-    "color": 35,
-    "scale": 12,
-    "theta": 6,
-    "depth": 4
-  },
   "lrs": {
     "mu_a0": 0.001,
     "mu_high": 0.0075,
@@ -38,8 +28,9 @@
     "depth_a0": 0.001,
     "depth_high": 0.0001
   },
-  "n_epochs": 1,
-  "checkpoint_cada_n_epochs": 1,
+  "n_epochs": 400,
+  "checkpoint_cada_n_epochs": 999999,
+  "guardar_checkpoints_intermedios": false,
   "sub_batch_frames": 2,
   "tipo_loss": "motion",
   "lambda_dssim": 0.25,
@@ -77,31 +68,30 @@
   "scheduler_lento_factor": 0.5,
   "scheduler_lento_min_lr": 1e-07,
   "scheduler_lento_cooldown": 150,
-  "umbral_pruning_post": 0.05,
-  "pruning_n_samples": 200,
   "ejecutar_pruning_post": false,
+  "umbral_pruning_post": 0.05,
+  "pruning_n_samples": 120,
   "frames_en_cpu": true,
   "frames_en_gpu_uint8": false,
   "evitar_render_completo_en_train": true,
   "sobreescribir_salida": true,
   "calcular_metricas": true,
   "usar_ssim": true,
-  "usar_lpips": true,
+  "usar_lpips": false,
   "calcular_compresion": false,
-  "guardar_visualizaciones": true,
-  "guardar_gif": true,
+  "guardar_visualizaciones": false,
+  "guardar_gif": false,
   "guardar_frames_rasterizados": true,
-  "guardar_checkpoints_intermedios": false,
-  "guardar_verificacion_visual": true,
-  "viz_frames_evolutivos": [
-    0,
-    150,
-    299
-  ],
-  "viz_gaussianas_marcadas_n": 20,
-  "calidades_avif": [
-    80,
-    95
-  ],
-  "usar_metricas_streaming": true
+  "guardar_verificacion_visual": false,
+  "usar_metricas_streaming": true,
+  "nombre_experimento": "thriller_cheby_8k_g36_400ep",
+  "n_gaussianas_inicial": 8000,
+  "grados": {
+    "mu": 36,
+    "opacity": 26,
+    "color": 20,
+    "scale": 10,
+    "theta": 6,
+    "depth": 4
+  }
 }
