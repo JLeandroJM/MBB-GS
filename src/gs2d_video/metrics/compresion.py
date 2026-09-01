@@ -12,14 +12,11 @@ Una vez instalado, basta con:
     from PIL import Image
     img.save("frame.avif", format="AVIF", quality=80)
 
-DECISION (calidades AVIF): reportamos calidad 80 (defecto razonable, casi
-indistinguible visualmente) y 95 (alta calidad, sirve para comparar con
-codecs lossy de poco rate). El usuario puede agregar mas en la lista
-`calidades` de `reporte_compresion`.
+Por defecto se evaluan las calidades AVIF 80 y 95.
+La lista puede modificarse mediante `calidades_avif`.
 """
 import io
 import os
-import tempfile
 
 import numpy as np
 import torch
@@ -34,12 +31,6 @@ except Exception as _e:
 from PIL import Image
 
 
-
-# bytes por dtype
-_BYTES_POR_DTYPE = {
-    torch.float32: 4, torch.float64: 8, torch.float16: 2, torch.bfloat16: 2,
-    torch.int64: 8, torch.int32: 4, torch.int16: 2, torch.int8: 1, torch.uint8: 1,
-}
 
 
 
@@ -57,7 +48,7 @@ def tamano_modelo_bytes(modelo):
     total = 0
     for k, v in sd.items():
         if torch.is_tensor(v):
-            total += v.numel() * _BYTES_POR_DTYPE.get(v.dtype, 4)
+            total += v.numel() * v.element_size()
         elif isinstance(v, dict):
             # 'grados' es un dict {nombre: int} -- ~6 ints + 6 strings ~ 100 bytes
             total += 100

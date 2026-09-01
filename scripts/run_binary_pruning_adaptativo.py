@@ -1,4 +1,4 @@
-﻿import argparse
+import argparse
 import csv
 import math
 import re
@@ -431,6 +431,7 @@ def render_pruned(
     output_dir,
     n_frames,
     fps,
+    device,
     force=False,
 ):
     output_dir = Path(output_dir)
@@ -468,6 +469,8 @@ def render_pruned(
         "0",
         "--fin",
         str(n_frames),
+        "--device",
+        device,
     ])
 
     return frames_dir
@@ -704,6 +707,7 @@ def main():
             output_dir=output_dir,
             n_frames=n_frames,
             fps=args.fps,
+            device=args.device,
             force=args.force,
         )
 

@@ -1,20 +1,14 @@
 """
-Cuantizacion post-entrenamiento de los coeficientes Gabor, para medir el
-trade-off compresion (bytes) vs calidad (SNR) de forma honesta.
+Cuantizacion post-entrenamiento de los parametros Gabor.
 
-DETALLE TEORICO IMPORTANTE sobre mu_t:
-    float16 tiene ~11 bits de mantisa -> solo representa enteros EXACTOS hasta
-    2048; mas alla aparecen huecos. Para 30 s a 44.1 kHz, mu_t llega a ~1.3e6
-    samples, donde el paso de fp16 es de ~128 samples (¡varios ms de error de
-    posicion!). Por eso mu_t NO se debe guardar en fp16. La posicion temporal es
-    intrinsecamente un entero de sample: se redondea y se guarda en int32 (4 B).
-    Los otros 4 parametros (log_sigma, amp, freq_raw, phi) tienen rango pequeno
-    y sí toleran fp16 (2 B) sin degradacion audible.
+mu_t se almacena como entero porque representa posiciones en samples y puede
+alcanzar valores donde float16 pierde demasiada precision. Los parametros de
+menor rango pueden evaluarse en float16.
 
 Esquemas:
-    fp32     : todo float32            -> 20 B/atomo (baseline sin perdida)
-    fp16mix  : mu_t int32 + resto fp16 -> 12 B/atomo (recomendado)
-    fp16full : todo fp16 (mu incluido) -> 10 B/atomo (muestra el dano en mu_t)
+    fp32     : todos los parametros en float32
+    fp16mix  : mu_t int32 y el resto float16
+    fp16full : todos los parametros en float16
 """
 import torch
 

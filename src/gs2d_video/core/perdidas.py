@@ -25,7 +25,7 @@ Knobs universales que afectan TODOS los tipo_loss (orthogonales):
                       puro sobre los pixeles. UNICAMENTE el peor pixel recibe gradiente.
                       Inestable salvo en early training; preferir exponente_pixel alto.
 
-Importante:
+Notas:
 - Si una lambda esta en 0, esa parte NO se calcula.
 - Este archivo funciona con el raster CUDA actual si usar_loss_cuda=false.
 - Para motion real, trainer.py debe pasar frames_all y frame_idx/frame_indices.
@@ -79,9 +79,9 @@ def _dssim_propio(x_b, y_b):
 def _config_from_arg(config_or_lambda, lambda_dssim=None):
     """
     Compatibilidad:
-    - nuevo: loss_render_frame(render, target, config)
-    - viejo: loss_render_frame(render, target, lambda_dssim=0.2)
-    - viejo: loss_render_batch(render, target, 0.2)
+    - config: loss_render_frame(render, target, config)
+    - compatible: loss_render_frame(render, target, lambda_dssim=0.2)
+    - compatible: loss_render_batch(render, target, 0.2)
     """
     if isinstance(config_or_lambda, dict):
         config = dict(config_or_lambda)
@@ -153,7 +153,7 @@ def _aggregate_pixel(diff_abs, weight, config):
                                    Si usar_pnorm_root=true se aplica (.)^(1/p) al resultado.
 
     Notas:
-        - La opcion 'max puro' es brutal: solo el peor pixel recibe gradiente.
+        - Con max puro solo el peor pixel recibe gradiente.
           Util como experimento puntual, no como entrenamiento estable.
         - Para p alto (>= 8) el comportamiento se acerca asintoticamente al max,
           pero preservando algo de gradiente para los demas pixeles -- mas estable.
@@ -218,8 +218,8 @@ def _motion_weight(frames_gt, config, frames_all=None, frame_indices=None, prev_
     2. prev_target_batch: usa el target actual contra el target previo ya movido al device.
     3. fallback: usa diferencias internas del batch.
 
-    Esto arregla el caso frame-by-frame: antes, con B=1 y frames_all=None,
-    lambda_motion no aportaba porque el mapa de movimiento quedaba en cero.
+    Permite calcular movimiento real durante entrenamiento frame-by-frame.
+
     """
     lambda_motion = _get_float(config, "lambda_motion", 0.0)
     if lambda_motion <= 0.0:
@@ -362,10 +362,6 @@ def _loss_temporal(render_batch, frames_gt, prev_render_batch=None, prev_target_
     return torch.mean(torch.abs(delta_render - delta_gt))
 
 
-def _loss_base_l1(render_batch, frames_gt, weight=None):
-    diff_abs = torch.abs(render_batch - frames_gt)
-    return _weighted_mean(diff_abs, weight)
-
 
 def loss_render_frame(
     render_hw3,
@@ -380,7 +376,7 @@ def loss_render_frame(
     """
     Loss para un frame.
 
-    Nuevo recomendado:
+    Uso recomendado:
         loss_render_frame(render_j, frames[j], config, frames_all=frames, frame_idx=j)
 
     Compatible con el codigo anterior:

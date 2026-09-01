@@ -9,8 +9,8 @@ directamente sobre el eje del tiempo de la senal:
 
 No hay STFT, no hay fase separada, no hay polinomios temporales. La senal cruda
 se aproxima como superposicion de atomos de Gabor (gaussiana modulada por una
-sinusoide). Esto resuelve el problema de Nyquist de las gaussianas puras: la
-modulacion cos permite representar oscilaciones de audio con pocos atomos.
+sinusoide). La modulacion cosenoidal permite representar oscilaciones de audio de forma
+explicita mediante atomos localizados en el tiempo.
 
 Parametrizacion (raw -> activado):
     mu_t   : posicion temporal en samples. raw directo, se clampa en [0, T-1].
@@ -128,12 +128,12 @@ class GaborAudio1D(nn.Module):
         Init matching-pursuit-like: coloca atomos en eventos tiempo-frecuencia y
         hereda su FASE (fija la polaridad correcta desde el inicio).
 
-        v2 - corrige el sesgo a graves de la v1:
+        Inicializacion por energia:
           - WHITENING PARCIAL (alpha): la prob no es |STFT|^2 puro (que concentra
             todo en los graves de alta energia y deja los agudos sin atomos), sino
             |STFT|^2 / perfil_frecuencia^alpha. Con alpha=1 cada frecuencia aporta
             por igual (whitening pleno -> cobertura de agudos); alpha=0 vuelve a la
-            v1. Default 0.7 (fuerte hacia cobertura).
+            version sin whitening. Default 0.7.
           - JITTER continuo en mu y f: rompe la grilla discreta del STFT y separa
             los atomos clonicos que el muestreo con reemplazo genera en un bin.
         """
@@ -239,7 +239,7 @@ def construir_optimizador_gabor(modelo, lrs=None):
     Adam con param_groups por tipo de parametro.
 
     Convencion de claves en lrs:
-        mu_t, log_sigma, amp, freq_raw, phi
+        mu_t, log_sigma, amp, freq_raw, phi, gain
     """
     lrs = lrs or {}
 

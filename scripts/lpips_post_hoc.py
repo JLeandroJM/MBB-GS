@@ -74,11 +74,6 @@ def agregados_lpips(valores):
 
 def actualizar_metricas_json(ruta, lpips_vals):
     """Inyecta lpips_por_frame y agregados en post_pruning. Hace backup."""
-    backup = ruta.with_suffix(".bak.json")
-    if not backup.exists():
-        ruta.replace(backup)
-        backup.replace(ruta)  # noop, solo para crear el backup la 1a vez
-        # Mejor: leer y reescribir, y dejar backup
     with open(ruta, encoding="utf-8") as f:
         m = json.load(f)
 

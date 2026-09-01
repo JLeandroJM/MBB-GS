@@ -13,17 +13,11 @@ SRC = RAIZ / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from gs2d_video.core.bases import construir_matriz_chebyshev
-from gs2d_video.core.modelo import GaussianasPolinomial2D
+from _carga_checkpoint import (
+    cargar_modelo_desde_checkpoint,
+    resolver_base_temporal,
+)
 from gs2d_video.render.renderer import render_frame
-
-
-def elegir_device(nombre):
-    if nombre == "cuda":
-        if not torch.cuda.is_available():
-            raise RuntimeError("CUDA no está disponible")
-        return torch.device("cuda")
-    return torch.device(nombre)
 
 
 def main():
@@ -36,12 +30,25 @@ def main():
     parser.add_argument("--forzar", action="store_true")
     args = parser.parse_args()
 
-    device = elegir_device(args.device)
     ruta_checkpoint = Path(args.checkpoint)
     carpeta_salida = Path(args.salida)
 
     if not ruta_checkpoint.is_file():
         raise FileNotFoundError(f"No existe: {ruta_checkpoint}")
+
+    modelo, config, _, info = cargar_modelo_desde_checkpoint(
+        ruta_checkpoint,
+        device=args.device,
+    )
+
+    device = modelo.mu_a0.device
+    grados = info["grados"]
+    n_gaussianas = int(info["N"])
+    n_frames_origen = int(info["n_frames"])
+    H = int(info["H"])
+    W = int(info["W"])
+
+    base_temporal, construir_matriz_base = resolver_base_temporal(config)
 
     carpeta_salida.mkdir(parents=True, exist_ok=True)
 
@@ -56,16 +63,6 @@ def main():
         for archivo in existentes:
             archivo.unlink()
 
-    checkpoint = torch.load(ruta_checkpoint, map_location=device)
-    state = checkpoint["state_dict_coefs"]
-    config = checkpoint["config"]
-
-    grados = state["grados"]
-    n_gaussianas = int(state["N"])
-    n_frames_origen = int(state["n_frames"])
-    H = int(state["H"])
-    W = int(state["W"])
-
     n_frames_salida = int(
         round((n_frames_origen - 1) * args.fps_salida / args.fps_origen)
     ) + 1
@@ -79,34 +76,12 @@ def main():
     print(f"fps original     : {args.fps_origen}")
     print(f"fps salida       : {args.fps_salida}")
     print(f"frames salida    : {n_frames_salida}")
+    print(f"base temporal    : {base_temporal}")
     print(f"destino          : {carpeta_salida}")
-
-    modelo = GaussianasPolinomial2D(
-        n_gaussianas=n_gaussianas,
-        n_frames=n_frames_origen,
-        grados=grados,
-        H=H,
-        W=W,
-        device=device,
-        escala_inicial_px=float(config.get("escala_inicial_px", 2.5)),
-        frame_0_imagen=None,
-        semilla=int(config.get("seed", 42)),
-    )
-
-    with torch.no_grad():
-        for nombre in ["mu", "opacity", "color", "scale", "theta", "depth"]:
-            getattr(modelo, f"{nombre}_a0").copy_(
-                state[f"{nombre}_a0"].to(device)
-            )
-            getattr(modelo, f"{nombre}_high").copy_(
-                state[f"{nombre}_high"].to(device)
-            )
-
-    modelo.eval()
 
     grados_unicos = sorted(set(grados.values()))
     matrices_base = {
-        grado: construir_matriz_chebyshev(
+        grado: construir_matriz_base(
             n_frames=n_frames_salida,
             grado_max=grado,
             device=device,

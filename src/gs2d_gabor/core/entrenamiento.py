@@ -2,7 +2,7 @@
 Loop de entrenamiento de UN canal de audio con Gabor splatting.
 
 Se factoriza aqui para que tanto el entrenamiento mono como el estereo
-(dos canales independientes L y R) compartan exactamente la misma logica de
+(mono, estereo o componentes Mid-Side) compartan la misma logica de
 optimizacion: construir el modelo, el optimizador Adam por grupos, el scheduler
 por plateau y el bucle de epochs.
 
@@ -27,8 +27,7 @@ def entrenar_canal(x, sr, config, device, semilla, etiqueta=""):
         sr       : sample rate (int).
         config   : dict de configuracion (mismas claves que el mono).
         device   : torch.device.
-        semilla  : semilla para la init del modelo (L y R usan semillas
-                   distintas para que sus inits aleatorias no sean identicas).
+        semilla  : semilla para la inicializacion del modelo.
         etiqueta : prefijo para los prints, p.ej. "[L]" / "[R]".
 
     Returns:

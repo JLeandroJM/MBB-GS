@@ -1,8 +1,11 @@
 """
-GaussianasPolinomial2D: modelo donde TODOS los parametros son polinomios
-en la base de Chebyshev de primer tipo.
+GaussianasPolinomial2D: modelo temporal de gaussianas 2D cuyos parametros
+se representan mediante coeficientes polinomiales.
 
-Diseno - DECISION (a_0 vs a_high):
+La base temporal se proporciona externamente. Chebyshev es la base principal;
+la base monomial se conserva para comparaciones experimentales.
+
+Separacion de a_0 y a_high:
 ----------------------------------
 Cada parametro p tiene grado q_p. Almacenamos sus coeficientes en DOS
 tensores separados:
@@ -200,11 +203,14 @@ class GaussianasPolinomial2D(nn.Module):
                 val = val.permute(2, 0, 1).contiguous()             # (n_frames, N, dim_p)
             out[nombre + '_raw'] = val
 
-        return _aplicar_activaciones_batch(out, self.log_scale_min, self.log_scale_max)
+        return _aplicar_activaciones(out, self.log_scale_min, self.log_scale_max)
 
+
+    def numero_gaussianas(self):
+        return self.mu_a0.shape[0]
 
     def numero_gausianas(self):
-        return self.mu_a0.shape[0]
+        return self.numero_gaussianas()
 
 
     def state_dict_coefs(self):
@@ -237,17 +243,6 @@ def _aplicar_activaciones(out, log_min, log_max):
     out['scale']   = torch.exp(out['scale_raw'].clamp(min=log_min, max=log_max))
     return out
 
-
-def _aplicar_activaciones_batch(out,log_min, log_max):
-    """Igual que single-frame pero opera sobre tensores con eje 0 = n_frames."""
-
-    out['mu']      = out['mu_raw']
-    out['theta']   = out['theta_raw']
-    out['depth']   = out['depth_raw']
-    out['opacity'] = torch.sigmoid(out['opacity_raw'])
-    out['color']   = torch.sigmoid(out['color_raw'])
-    out['scale']   = torch.exp(out['scale_raw'].clamp(min=log_min, max=log_max))
-    return out
 
 
 def _logit(p):

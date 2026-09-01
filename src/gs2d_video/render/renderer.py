@@ -7,7 +7,7 @@ from gs2d_video.render.cuda_tiled import (
 
 def render_frame(params_j, H, W, config):
     if not bool(config.get("usar_cuda_tiled", True)):
-        raise RuntimeError("Este repo limpio solo soporta usar_cuda_tiled=true")
+        raise RuntimeError("El renderer requiere usar_cuda_tiled=true")
 
     return rasterizar_un_frame_cuda_tiled(
         params_j,
@@ -20,7 +20,7 @@ def render_frame(params_j, H, W, config):
 
 def loss_frame_cuda(params_j, target_j, H, W, config):
     if not bool(config.get("usar_cuda_tiled", True)):
-        raise RuntimeError("Este repo limpio solo soporta usar_cuda_tiled=true")
+        raise RuntimeError("El renderer requiere usar_cuda_tiled=true")
 
     loss_type = config.get("loss_cuda_tipo", "l1")
 

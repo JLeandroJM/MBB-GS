@@ -8,8 +8,8 @@ Funciona en Windows/Linux/Mac. Carga checkpoints generados por train.py:
     checkpoint_final.pt
     modelo_pruneado.pt
 
-No rasteriza ni usa CUDA por defecto. Solo reconstruye el objeto
-GaussianasPolinomial2D y evalua sus coeficientes Chebyshev.
+No rasteriza por defecto. Reconstruye el objeto GaussianasPolinomial2D
+y las matrices de la base temporal almacenada en el checkpoint.
 """
 
 from pathlib import Path
@@ -26,7 +26,7 @@ SRC = RAIZ / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from gs2d_video.core.bases import construir_matriz_chebyshev
+from gs2d_video.core.bases import construir_matriz_chebyshev, construir_matriz_monomial
 from gs2d_video.core.modelo import GaussianasPolinomial2D
 
 
@@ -44,10 +44,14 @@ def _torch_load_seguro(path, map_location="cpu"):
 def elegir_device(device_str="cpu"):
     if device_str is None:
         device_str = "cpu"
-    if device_str == "cuda":
-        if not torch.cuda.is_available():
-            raise RuntimeError("Pediste cuda, pero torch.cuda.is_available()==False")
-        return torch.device("cuda")
+
+    device_str = str(device_str)
+
+    if device_str.startswith("cuda") and not torch.cuda.is_available():
+        raise RuntimeError(
+            f"Pediste {device_str}, pero torch.cuda.is_available()==False"
+        )
+
     return torch.device(device_str)
 
 
@@ -57,6 +61,23 @@ def inferir_n_gaussianas(sd, config):
         if torch.is_tensor(value) and value.ndim >= 1:
             return int(value.shape[0])
     return int(config["n_gaussianas_inicial"])
+
+
+def resolver_base_temporal(config):
+    base_temporal = str(
+        config.get("base_temporal", "chebyshev")
+    ).lower().strip()
+
+    if base_temporal in ("chebyshev", "cheby", "cheb"):
+        return "chebyshev", construir_matriz_chebyshev
+
+    if base_temporal in ("monomial", "mono"):
+        return "monomial", construir_matriz_monomial
+
+    raise ValueError(
+        f"base_temporal desconocida: {base_temporal!r}. "
+        "Usa 'chebyshev' o 'monomial'."
+    )
 
 
 def _leer_info_clip_cercano(checkpoint):
@@ -135,9 +156,17 @@ def cargar_modelo_desde_checkpoint(checkpoint, device="cpu", clip_override=None)
 
     modelo.eval()
 
+    base_temporal, construir_matriz_base = resolver_base_temporal(config)
+    config["base_temporal"] = base_temporal
+
     grados_distintos = sorted(set(grados.values()))
     matrices_base = {
-        g: construir_matriz_chebyshev(n_frames, g, device=device, dtype=torch.float32)
+        g: construir_matriz_base(
+            n_frames,
+            g,
+            device=device,
+            dtype=torch.float32,
+        )
         for g in grados_distintos
     }
 
@@ -147,6 +176,7 @@ def cargar_modelo_desde_checkpoint(checkpoint, device="cpu", clip_override=None)
         "W": W,
         "n_frames": n_frames,
         "grados": grados,
+        "base_temporal": base_temporal,
         "checkpoint": str(checkpoint),
     }
     return modelo, config, matrices_base, info

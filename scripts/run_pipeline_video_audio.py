@@ -297,6 +297,7 @@ def main():
         "resolucion_extraccion": [H, W],
         "device": device,
         "ejecutar_pruning_post": False,
+        "guardar_frames_rasterizados": True,
         "sobreescribir_salida": True,
     })
     runtime_video = runtime_dir / "video_runtime.json"

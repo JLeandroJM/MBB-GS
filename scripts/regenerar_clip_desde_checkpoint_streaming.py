@@ -23,19 +23,8 @@ SRC = RAIZ / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from gs2d_video.core.bases import construir_matriz_chebyshev
-from gs2d_video.core.modelo import GaussianasPolinomial2D
+from _carga_checkpoint import cargar_modelo_desde_checkpoint
 from gs2d_video.render.renderer import render_frame
-
-
-def elegir_device(device_str):
-    if device_str == "cuda":
-        if not torch.cuda.is_available():
-            raise RuntimeError("cuda no disponible")
-        return torch.device("cuda")
-    if device_str == "cpu":
-        return torch.device("cpu")
-    return torch.device(device_str)
 
 
 def listar_frames_clip(carpeta_clip):
@@ -45,51 +34,6 @@ def listar_frames_clip(carpeta_clip):
         p for p in carpeta_clip.iterdir()
         if p.name.startswith("frame_") and p.suffix.lower() == ".png"
     )
-
-
-def inferir_n_gaussianas(sd, config):
-    for key in ["mu_a0", "color_a0", "opacity_a0", "scale_a0", "theta_a0", "depth_a0"]:
-        value = sd.get(key)
-        if torch.is_tensor(value) and value.ndim >= 1:
-            return int(value.shape[0])
-    return int(config["n_gaussianas_inicial"])
-
-
-def cargar_checkpoint_y_modelo(ruta_checkpoint, device, clip_override=None):
-    ckpt = torch.load(str(ruta_checkpoint), map_location="cpu")
-    if "config" not in ckpt or "state_dict_coefs" not in ckpt:
-        raise RuntimeError("El checkpoint no tiene config o state_dict_coefs")
-
-    config = dict(ckpt["config"])
-    if clip_override is not None:
-        config["clip"] = clip_override
-
-    sd = ckpt["state_dict_coefs"]
-    grados = dict(sd.get("grados", config["grados"]))
-    n_gaussianas = int(sd.get("N", inferir_n_gaussianas(sd, config)))
-    H = int(sd.get("H"))
-    W = int(sd.get("W"))
-    n_frames = int(sd.get("n_frames", config.get("max_frames")))
-
-    modelo = GaussianasPolinomial2D(
-        n_gaussianas=n_gaussianas,
-        n_frames=n_frames,
-        grados=grados,
-        H=H,
-        W=W,
-        device=device,
-        escala_inicial_px=float(config.get("escala_inicial_px", 5.0)),
-        frame_0_imagen=None,
-        semilla=int(config.get("seed", 42)),
-    )
-
-    with torch.no_grad():
-        for nombre in ["mu", "opacity", "color", "scale", "theta", "depth"]:
-            getattr(modelo, f"{nombre}_a0").copy_(sd[f"{nombre}_a0"].to(device))
-            getattr(modelo, f"{nombre}_high").copy_(sd[f"{nombre}_high"].to(device))
-
-    modelo.eval()
-    return modelo, config, grados, n_frames, H, W, n_gaussianas
 
 
 def imagen_render_a_uint8(render):
@@ -142,11 +86,20 @@ def regenerar_frames_streaming(
     salida.mkdir(parents=True, exist_ok=True)
 
     device_str = device_str or "cuda"
-    device = elegir_device(device_str)
 
-    modelo, config, grados, n_frames_ckpt, H, W, n_gaussianas = cargar_checkpoint_y_modelo(
-        checkpoint, device, clip_override=clip_override
+    modelo, config, matrices_base, info = cargar_modelo_desde_checkpoint(
+        checkpoint,
+        device=device_str,
+        clip_override=clip_override,
     )
+
+    device = modelo.mu_a0.device
+    grados = info["grados"]
+    n_frames_ckpt = int(info["n_frames"])
+    H = int(info["H"])
+    W = int(info["W"])
+    n_gaussianas = int(info["N"])
+    base_temporal = info["base_temporal"]
 
     clip = config["clip"]
     carpeta_clip = RAIZ / "data" / "clips" / clip
@@ -178,12 +131,8 @@ def regenerar_frames_streaming(
     print(f"render     : {inicio}..{fin - 1}", flush=True)
     print(f"resolucion : {H}x{W}", flush=True)
     print(f"grados     : {grados}", flush=True)
+    print(f"base       : {base_temporal}", flush=True)
 
-    grados_distintos = sorted(set(grados.values()))
-    matrices_base = {
-        g: construir_matriz_chebyshev(n_frames_ckpt, g, device=device, dtype=torch.float32)
-        for g in grados_distintos
-    }
 
     carpeta_comp = salida.parent / "comparaciones_streaming"
     if guardar_comparaciones:

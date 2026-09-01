@@ -1,7 +1,7 @@
 """
 Adam con param_groups: por TIPO de parametro Y por ORDEN del coeficiente.
 
-DECISION (separacion a_0 vs a_high):
+Separacion de a_0 y a_high:
 ------------------------------------
 El modelo guarda a_0 y a_high en nn.Parameters distintos por construccion
 (ver modelo.py). Asi, construir los param_groups es simplemente listar los
@@ -15,7 +15,7 @@ import torch
 
 
 
-# defaults razonables (se usan solo si falta alguna clave en el config)
+# Valores usados cuando una tasa de aprendizaje no esta definida
 _DEFAULTS = {
     'mu_a0':      1e-3, 'mu_high':      1e-4,
     'opacity_a0': 5e-2, 'opacity_high': 5e-3,

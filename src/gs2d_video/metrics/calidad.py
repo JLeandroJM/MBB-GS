@@ -104,10 +104,6 @@ def calcular_lpips(render, gt, device=None):
         return float(fn(x_b, y_b).item())
 
 
-def _promedio_o_none(valores):
-    validos = [v for v in valores if v is not None]
-    return float(np.mean(validos)) if validos else None
-
 
 def _agregados(valores, prefijo):
     """Devuelve dict con {prefijo}_promedio/min/max/p5/std. Ignora None."""

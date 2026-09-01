@@ -8,19 +8,9 @@ Estructura:
 - Fase 3: ablacion de agregacion a nivel pixel (Nivel 0),
           con el ganador de Fase 2 fijo.
 
-IMPORTANTE - como pasar de una fase a la siguiente:
-    Las Fases 2 y 3 estan PRE-CONFIGURADAS asumiendo ciertos ganadores
-    (ver comentarios "GANADOR ASUMIDO"). Si los experimentos de la fase
-    anterior dan otro ganador, hay que editar los configs de las fases
-    posteriores ANTES de correrlas.
-
-    - Si gana otro tipo_loss en Fase 1 (no baseline):
-        editar 'tipo_loss' y sus lambdas en TODOS los configs de
-        configs/fase2_*.json y configs/fase3_*.json.
-
-    - Si gana otro exponente_frame en Fase 2 (no 2.0):
-        editar 'exponente_frame' en TODOS los configs de
-        configs/fase3_*.json.
+Cada fase utiliza los parametros definidos en sus archivos JSON.
+El script ejecuta las configuraciones tal como estan almacenadas y no modifica
+automaticamente los resultados de una fase a partir de otra.
 
 Uso:
     python scripts/run_tests_secuencial.py
@@ -41,7 +31,7 @@ from datetime import datetime
 # ============================================================
 
 FASE_1 = [
-    "configs/fase1_baseline.json",   # L1 + DSSIM (referencia, esperado favorito)
+    "configs/fase1_baseline.json",   # L1 + DSSIM (referencia)
     "configs/fase1_l1_mse.json",     # L1 + MSE + DSSIM
     "configs/fase1_edge.json",       # L1 + Sobel edge + DSSIM
     "configs/fase1_temporal.json",   # L1 + |dR - dGT| + DSSIM
@@ -49,21 +39,18 @@ FASE_1 = [
     "configs/fase1_combo.json",      # motion x hard + DSSIM
 ]
 
-# GANADOR ASUMIDO FASE 1: 'baseline'.
-# Si gana otro, hay que editar 'tipo_loss' y sus lambdas en TODOS los
-# configs de Fase 2 y Fase 3 antes de correrlos.
+# Fase 2 utiliza los parametros definidos en sus propios configs.
 FASE_2 = [
-    "configs/fase2_qframe1.json",    # exponente_frame=1 (referencia, = ganador F1)
+    "configs/fase2_qframe1.json",    # exponente_frame=1 (referencia)
     "configs/fase2_qframe2.json",    # exponente_frame=2
     "configs/fase2_qframe4.json",    # exponente_frame=4
     "configs/fase2_qframe8.json",    # exponente_frame=8
     "configs/fase2_maxframe.json",   # usar_max_frame=true (max puro)
 ]
 
-# GANADOR ASUMIDO FASE 2: exponente_frame=2.
-# Si gana otro, editar 'exponente_frame' en TODOS los configs de Fase 3.
+# Fase 3 utiliza los parametros definidos en sus propios configs.
 FASE_3 = [
-    "configs/fase3_qpixel1.json",    # exponente_pixel=1 (referencia, = ganador F2)
+    "configs/fase3_qpixel1.json",    # exponente_pixel=1 (referencia)
     "configs/fase3_qpixel2.json",    # exponente_pixel=2
     "configs/fase3_qpixel4.json",    # exponente_pixel=4
 ]

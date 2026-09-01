@@ -24,11 +24,8 @@ La matriz B tiene shape (N_frames, q+1). El modelo hace simplemente:
 import torch
 
 
-# DECISION: construimos primero en CPU con float64 para precision de la
-# recurrencia (con grado >= 30 hay cancelacion importante si se usa float32
-# nativo), y despues movemos al device en el dtype objetivo. MPS no soporta
-# float64 nativo. CUDA si pero el costo de crear esta matriz una sola vez
-# es despreciable.
+# La matriz se construye en CPU con float64 para mejorar la estabilidad
+# numerica y luego se convierte al dtype y device solicitados.
 def construir_matriz_chebyshev(n_frames, grado_max, device='cpu', dtype=torch.float32):
     """
     Matriz B (n_frames, grado_max+1) en base de Chebyshev de primer tipo.

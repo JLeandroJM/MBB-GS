@@ -12,9 +12,8 @@ Filtro aplicado al video:
   2. scale a (W, H) -- por defecto 256x256
   3. fps opcional (None = nativo del video)
 
-DECISION: si la carpeta destino YA tiene n_frames esperado, no re-extraemos
-(cache implicito). Para forzar reextraccion: `"forzar_extraccion": true` en
-el config.
+Si la carpeta destino ya contiene los frames esperados, se reutiliza como cache.
+La extraccion puede forzarse mediante "forzar_extraccion": true.
 """
 import os
 import shutil

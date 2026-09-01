@@ -92,9 +92,7 @@ def generar_heatmap_opacity(modelo, matrices_base, ruta):
 
 
 
-# DECISION (eleccion de las 5 gaussianas representativas): top-5 por opacity
-# promedio sobre el clip. Son las que mas contribuyen visualmente, asi que
-# son las mas relevantes para ver "que aprendio" el modelo.
+# Selecciona las gaussianas con mayor opacidad promedio.
 @torch.no_grad()
 def generar_evolucion_parametros(modelo, matrices_base, ruta, n_sel=5):
     grado_op = modelo.grados['opacity']
@@ -104,7 +102,7 @@ def generar_evolucion_parametros(modelo, matrices_base, ruta, n_sel=5):
     top_idx = torch.argsort(op_mean, descending=True)[:n_sel].cpu().numpy()
 
     todos = {}
-    for nombre, (a0, hi, grado, dim_p) in modelo.parametros_temporales().items():
+    for nombre, (a0, hi, grado, _) in modelo.parametros_temporales().items():
         v = _evaluar_param_todos_frames(a0, hi, matrices_base[grado])    # (N, dim_p, T)
         if nombre in ('opacity', 'color'):
             v = torch.sigmoid(v)
@@ -145,7 +143,7 @@ def generar_coeficientes_magnitudes(modelo, ruta):
     fig, axes = plt.subplots(2, 3, figsize=(14, 7), dpi=100)
     axes = axes.flatten()
 
-    for ax, (nombre, (a0, hi, grado, dim_p)) in zip(axes, modelo.parametros_temporales().items()):
+    for ax, (nombre, (a0, hi, grado, _)) in zip(axes, modelo.parametros_temporales().items()):
         # |a_0| y |a_k| para k=1..grado
         coefs_full = torch.cat([a0, hi], dim=-1).detach().cpu()    # (N, dim_p, q+1)
         # mediana de magnitudes sobre N y dim_p, por k
@@ -156,7 +154,7 @@ def generar_coeficientes_magnitudes(modelo, ruta):
         ax.set_xlabel("k (orden coef)")
         ax.set_ylabel("mediana |a_k|")
         ax.grid(True, alpha=0.3)
-    fig.suptitle("Magnitudes de coeficientes — un k alto con barra alta significa que el modelo usa ese grado")
+    fig.suptitle("Magnitudes de coeficientes - un k alto indica que el modelo usa ese grado")
     fig.tight_layout()
     fig.savefig(ruta)
     plt.close(fig)

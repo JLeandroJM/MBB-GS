@@ -70,7 +70,7 @@ def frame_a_float_device(frame, device):
     - CPU float -> CUDA/CPU float32
     - CUDA float32 -> igual
     """
-    if frame.device.type == device.type and frame.dtype == torch.float32:
+    if frame.device == device and frame.dtype == torch.float32:
         return frame
 
     if frame.dtype == torch.uint8:
@@ -84,7 +84,7 @@ def frames_a_float_device(frames, device):
     Convierte un tensor completo de frames a float32 en device.
     Usar solo para resoluciones pequenas porque puede ocupar mucha VRAM.
     """
-    if frames.device.type == device.type and frames.dtype == torch.float32:
+    if frames.device == device and frames.dtype == torch.float32:
         return frames
 
     if frames.dtype == torch.uint8:
@@ -111,10 +111,6 @@ def frames_a_uint8_numpy(frames):
         .cpu()
         .numpy()
     )
-
-
-def rasterizar_segun_config(params_j, H, W, config):
-    return render_frame(params_j, H, W, config)
 
 
 @torch.no_grad()
@@ -573,7 +569,7 @@ def main():
         frame_0_imagen=frame_init_color,
         semilla=seed,
     )
-    print(f"modelo: N={modelo.numero_gausianas()}  grados={grados}", flush=True)
+    print(f"modelo: N={modelo.numero_gaussianas()}  grados={grados}", flush=True)
 
     # Ya no se necesita mantener frame_init_color como variable grande.
     del frame_init_color
@@ -616,8 +612,8 @@ def main():
         carpeta_salida=salida,
     )
 
-    # === DEBUG: rangos de parametros despues del entrenamiento =============
-    print("\n=== DEBUG rangos de parametros activados ===", flush=True)
+    # === resumen de parametros despues del entrenamiento ====================
+    print("\n=== resumen de parametros activados ===", flush=True)
     with torch.no_grad():
         params_0 = modelo.evaluar_en_frame(0, matrices_base)
         params_mid = modelo.evaluar_en_frame(n_frames // 2, matrices_base)
@@ -752,7 +748,7 @@ def main():
         rep_pre = _reporte_vacio(n_frames)
 
     # === pruning post-training =============================================
-    n_orig = modelo.numero_gausianas()
+    n_orig = modelo.numero_gaussianas()
 
     if ejecutar_pruning:
         print("\n=== pruning post-training ===", flush=True)
@@ -843,7 +839,10 @@ def main():
         puede_reusar = False
         if render_pre is not None and reuse_umbral is not None and n_orig > 0:
             pct_eliminado = (n_orig - n_final) / n_orig
-            puede_reusar = pct_eliminado <= float(reuse_umbral)
+            puede_reusar = (
+                n_orig == n_final
+                and pct_eliminado <= float(reuse_umbral)
+            )
 
         if puede_reusar:
             print("\n=== render post-pruning reutilizado desde pre-pruning ===", flush=True)
@@ -861,7 +860,7 @@ def main():
                 d_mid_last = torch.mean(torch.abs(render_post[n_frames // 2] - render_post[-1])).item()
                 d_0_last = torch.mean(torch.abs(render_post[0] - render_post[-1])).item()
 
-            print("\n=== debug movimiento render ===", flush=True)
+            print("\n=== movimiento entre renders ===", flush=True)
             print(f"  diff frame0 vs mid  = {d_0_mid:.6f}", flush=True)
             print(f"  diff mid vs last    = {d_mid_last:.6f}", flush=True)
             print(f"  diff frame0 vs last = {d_0_last:.6f}", flush=True)

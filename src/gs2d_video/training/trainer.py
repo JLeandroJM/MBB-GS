@@ -1,26 +1,8 @@
 """
-Loop de entrenamiento epoch-based con gradient accumulation.
+Entrenamiento del modelo de video con acumulacion de gradientes.
 
-Cambios de rendimiento:
-- Soporta frames en CPU/RAM para reducir VRAM.
-- Solo mueve a GPU el frame que se usa en cada iteracion.
-- Flags para desactivar PSNR durante training.
-- Flags para no guardar checkpoints intermedios ni verificacion visual.
-- Verificacion visual usa el mismo rasterizador del config si se activa.
-- Opcion frames_por_epoch para debug/entrenamiento rapido con subset temporal.
-- Opcion usar_muestreo_temporal_por_bloques para muestreo estratificado.
-
-
-CAMBIOS 
-1. _frame_a_device ya no esta dentro de MuestreadorTemporalPorBloques.
-2. frames[j] se convierte a GPU solo cuando se necesita.
-3. motion/combo reciben prev_target sin pasar frames_all completo.
-4. temporal recibe prev_render y prev_target cuando hace falta.
-5. loss CUDA tambien usa target_j en GPU.
-6. PSNR durante entrenamiento funciona aunque frames esten en CPU.
-7. Se elimino el bloque de scheduler que estaba fuera del loop y usaba epoch antes de existir.
-
-
+Soporta frames en CPU, muestreo temporal, checkpoints, metricas opcionales,
+scheduler por plateau y rasterizacion CUDA tiled.
 """
 
 import os
@@ -45,7 +27,7 @@ def _frame_a_device(frame, device):
     - CPU float32/float16: pasa a GPU como float32.
     - CUDA float32: lo devuelve tal cual.
     """
-    if frame.device.type == device.type and frame.dtype == torch.float32:
+    if frame.device == device and frame.dtype == torch.float32:
         return frame
 
     if frame.dtype == torch.uint8:
@@ -257,7 +239,7 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     usar_loss_cuda = bool(config.get("usar_loss_cuda", False))
     loss_cuda_tipo = config.get("loss_cuda_tipo", "l1")
 
-    # ----- Knobs "max-aware" pedidos por el profesor -----
+    # Agregacion del error entre frames
     # exponente_frame: p-norm sobre los losses de frame.
     #   p=1  -> mean(L_j)
     #   p=2  -> mean(L_j^2)
@@ -334,7 +316,7 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     # Renderer CUDA
     # ============================================================
     usar_cuda_conic = bool(config.get("usar_cuda_conic", False))
-    usar_cuda_tiled = bool(config.get("usar_cuda_tiled", False))
+    usar_cuda_tiled = bool(config.get("usar_cuda_tiled", True))
     tile_size = int(config.get("cuda_tile_size", 16))
     k_sigma = float(config.get("cuda_k_sigma", 3.5))
 
@@ -342,7 +324,7 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         raise RuntimeError("No puedes usar usar_cuda_conic=true y usar_cuda_tiled=true al mismo tiempo")
 
     if not usar_cuda_tiled:
-        raise RuntimeError("Este repo limpio solo soporta usar_cuda_tiled=true")
+        raise RuntimeError("El entrenamiento requiere usar_cuda_tiled=true")
 
     print(
         f"[trainer] usando rasterizador CUDA tiled diferenciable "
@@ -400,7 +382,7 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
         # Trackers para reporte:
         # - total: loss efectivo que entra al gradiente.
         # - raw_*: metricas interpretables del loss por frame sin exponente.
-        # Importante: usar device_modelo, porque frames puede estar en CPU uint8.
+        # Los acumuladores se crean en el device del modelo.
         loss_render_epoch_total = torch.zeros((), device=device_modelo)
         loss_render_epoch_raw_sum = torch.zeros((), device=device_modelo)
         loss_render_epoch_raw_max = torch.zeros((), device=device_modelo)
