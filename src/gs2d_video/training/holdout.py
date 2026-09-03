@@ -65,9 +65,16 @@ def generar_indices_supervisados(n_frames, holdout_cfg, seed=42):
             sup.update(idx_bloque[p] for p in perm[:tomar])
 
     elif modo == "gap":
-        inicio = int(holdout_cfg["inicio"])
-        longitud = int(holdout_cfg["longitud"])
-        hueco = set(range(inicio, min(inicio + longitud, n)))
+        # Un gap: "inicio"+"longitud".  Varios gaps: "huecos": [[inicio,long],...]
+        huecos_cfg = holdout_cfg.get("huecos")
+        hueco = set()
+        if huecos_cfg:
+            for ini, lon in huecos_cfg:
+                hueco |= set(range(int(ini), min(int(ini) + int(lon), n)))
+        else:
+            inicio = int(holdout_cfg["inicio"])
+            longitud = int(holdout_cfg["longitud"])
+            hueco = set(range(inicio, min(inicio + longitud, n)))
         sup = todos - hueco
 
     elif modo == "gaps_aleatorios":

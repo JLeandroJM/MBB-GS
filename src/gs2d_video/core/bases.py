@@ -78,6 +78,50 @@ def construir_matriz_chebyshev_en_t(t_norm, grado_max, device='cpu', dtype=torch
     return B.to(dtype=dtype, device=device)
 
 
+def construir_matriz_chebyshev_2da_derivada(t_norm, grado_max, device='cpu', dtype=torch.float32):
+    """
+    Matriz B2 (len(t_norm), grado_max+1) con B2[i, k] = T_k''(t_norm[i]),
+    la SEGUNDA derivada de Chebyshev respecto a t (normalizado).
+
+    Uso clave: regularizador de ACELERACION temporal. Como cada parametro es
+    p(t) = sum_k a_k T_k(t), su aceleracion es p''(t) = sum_k a_k T_k''(t) =
+    coefs @ B2[i]. Penalizar mean_t ||p''(t)||^2 en instantes t DENSOS (incluyendo
+    los no supervisados) empuja a trayectorias casi-lineales entre frames -> menos
+    oscilacion de Runge y menos cross-fade en la interpolacion sub-frame.
+
+    Construimos a la vez los valores (B), la 1ra derivada (Bp) y la 2da (Bpp) con
+    las recurrencias derivadas de la de Chebyshev:
+        T_k   = 2 t T_{k-1}   - T_{k-2}
+        T_k'  = 2 T_{k-1}   + 2 t T_{k-1}'  - T_{k-2}'
+        T_k'' = 4 T_{k-1}'  + 2 t T_{k-1}'' - T_{k-2}''
+    con T_0''=T_1''=0, T_0'=0, T_1'=1.
+
+    Nota: la derivada es respecto al t normalizado en [-1, 1]; un cambio de escala
+    a indice de frame solo multiplica por una constante que se absorbe en lambda.
+    """
+    t = torch.as_tensor(t_norm, dtype=torch.float64).reshape(-1)
+    m = t.shape[0]
+    q = grado_max
+
+    B = torch.empty(m, q + 1, dtype=torch.float64)
+    Bp = torch.empty(m, q + 1, dtype=torch.float64)
+    Bpp = torch.empty(m, q + 1, dtype=torch.float64)
+
+    B[:, 0] = 1.0
+    Bp[:, 0] = 0.0
+    Bpp[:, 0] = 0.0
+    if q >= 1:
+        B[:, 1] = t
+        Bp[:, 1] = 1.0
+        Bpp[:, 1] = 0.0
+    for k in range(2, q + 1):
+        B[:, k] = 2.0 * t * B[:, k - 1] - B[:, k - 2]
+        Bp[:, k] = 2.0 * B[:, k - 1] + 2.0 * t * Bp[:, k - 1] - Bp[:, k - 2]
+        Bpp[:, k] = 4.0 * Bp[:, k - 1] + 2.0 * t * Bpp[:, k - 1] - Bpp[:, k - 2]
+
+    return Bpp.to(dtype=dtype, device=device)
+
+
 
 # ===========================================================================
 # tests
@@ -97,6 +141,15 @@ def _tests():
     # estabilidad numerica: con grado 40 los valores deben quedarse <= 1
     Bbig = construir_matriz_chebyshev(90, 40)
     assert (Bbig.abs() <= 1.0 + 1e-5).all(), "Cheb grado 40: overflow inesperado"
+
+    # segunda derivada: T_2''=4, T_3''=24t, T_4''=96t^2-16
+    td = t.double()
+    B2 = construir_matriz_chebyshev_2da_derivada(td, 4, dtype=torch.float64)
+    assert torch.allclose(B2[:, 0], torch.zeros(5, dtype=torch.float64), atol=1e-6)  # T_0''=0
+    assert torch.allclose(B2[:, 1], torch.zeros(5, dtype=torch.float64), atol=1e-6)  # T_1''=0
+    assert torch.allclose(B2[:, 2], torch.full((5,), 4.0, dtype=torch.float64), atol=1e-6)  # T_2''
+    assert torch.allclose(B2[:, 3], 24 * td, atol=1e-6)                  # T_3''
+    assert torch.allclose(B2[:, 4], 96 * td ** 2 - 16, atol=1e-6)        # T_4''
 
     print("[bases] tests OK")
 

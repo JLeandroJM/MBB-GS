@@ -28,7 +28,8 @@ import time
 
 import torch
 
-from gs2d_video.core.perdidas import loss_render_frame, loss_smoothness
+from gs2d_video.core.bases import construir_matriz_chebyshev_2da_derivada
+from gs2d_video.core.perdidas import loss_render_frame, loss_smoothness, loss_aceleracion_mu
 from gs2d_video.render.renderer import render_frame, loss_frame_cuda
 
 
@@ -219,6 +220,24 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
     beta = float(config["beta_smoothness"])
     pesos_smooth = config.get("pesos_smoothness", None)
     chk_each = int(config.get("checkpoint_cada_n_epochs", 50))
+
+    # Regularizador de aceleracion sobre mu(t): penaliza ||mu''(t)||^2 muestreado
+    # en t DENSO (incluye instantes intermedios no supervisados). Empuja
+    # trayectorias suaves -> mejor interpolacion sub-frame (slow-mo).
+    lambda_accel = float(config.get("lambda_accel", 0.0))
+    accel_muestras = int(config.get("accel_muestras", 2 * n_frames))
+    B2_mu = None
+    if lambda_accel > 0.0:
+        grado_mu = modelo.grados["mu"]
+        t_dense = torch.linspace(-1.0, 1.0, max(2, accel_muestras), dtype=torch.float64)
+        B2_mu = construir_matriz_chebyshev_2da_derivada(
+            t_dense, grado_mu, device=device_modelo, dtype=modelo.mu_a0.dtype
+        )
+        print(
+            f"[trainer] regularizador de aceleracion activo: lambda_accel={lambda_accel} "
+            f"(mu grado={grado_mu}, {accel_muestras} muestras densas en t)",
+            flush=True,
+        )
 
     sub_batch_fr = int(config.get("sub_batch_frames", 1))
     early_plateau = config.get("early_stop_plateau", None)
@@ -559,6 +578,15 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
             loss_smooth_escalado.backward()
 
         # --------------------------------------------------------
+        # Aceleracion (regularizador de trayectoria mu)
+        # --------------------------------------------------------
+        loss_accel_reportado = 0.0
+        if lambda_accel > 0.0:
+            loss_accel = loss_aceleracion_mu(modelo, B2_mu)
+            (lambda_accel * loss_accel).backward()
+            loss_accel_reportado = float(loss_accel.detach().item())
+
+        # --------------------------------------------------------
         # Optimizer step
         # --------------------------------------------------------
         optimizer.step()
@@ -636,6 +664,7 @@ def entrenar_batch_full(modelo, frames, matrices_base, optimizer, config, carpet
                 f"loss_r_mean={loss_render_raw_mean:.5f}  "
                 f"loss_r_max={loss_render_raw_max:.5f}  "
                 f"loss_s={loss_smooth_reportado:.3e}  "
+                f"loss_a={loss_accel_reportado:.3e}  "
                 f"PSNR_avg={psnr_avg:.2f}  "
                 f"t_epoch={tiempos[-1]:.1f}s  "
                 f"eta={eta / 60:.1f}min"

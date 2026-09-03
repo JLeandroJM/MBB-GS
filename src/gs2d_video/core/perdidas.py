@@ -555,6 +555,24 @@ def loss_render_batch(
     )
 
 
+def loss_aceleracion_mu(modelo, B2_mu):
+    """
+    Penaliza la ACELERACION temporal de la posicion: mean_t ||mu''(t)||^2.
+
+    Args:
+        modelo : GaussianasPolinomial2D.
+        B2_mu  : (M, grado_mu+1) = T_k''(t_i) en M instantes t densos (de
+                 construir_matriz_chebyshev_2da_derivada), en el device/dtype del modelo.
+
+    Como mu(t) = coefs @ T(t), la aceleracion es mu''(t) = coefs @ T''(t).
+    Empuja trayectorias casi-lineales entre frames -> menos Runge y menos
+    cross-fade en la interpolacion sub-frame. No rasteriza: solo matmul.
+    """
+    coefs = torch.cat([modelo.mu_a0, modelo.mu_high], dim=-1)   # (N, 2, q+1)
+    accel = coefs @ B2_mu.T                                     # (N, 2, M)
+    return (accel ** 2).mean()
+
+
 def loss_smoothness(modelo, pesos_por_param=None):
     """Penaliza coeficientes de orden alto usando factores cacheados."""
     total = None
