@@ -2,7 +2,7 @@
 Extrae frames de video/video.mp4 como PNGs 720p en data/clips/<nombre_clip>/.
 
 Uso tipico (una sola vez antes de la ablacion):
-    python scripts/extraer_clips_720p.py
+    python scripts/datos/extraer_clips_720p.py
 
 Defaults pensados para el estudio de ablacion de loss:
     - video de entrada : video/video.mp4
@@ -33,7 +33,7 @@ from pathlib import Path
 import cv2
 
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 RUTA_VIDEO_DEFAULT = RAIZ / "video" / "video.mp4"
 RUTA_CLIPS_DEFAULT = RAIZ / "data" / "clips"
 

@@ -47,7 +47,7 @@ echo "=== INFO PyTorch ==="
 python -c "import torch; print('torch', torch.__version__, 'cuda_ok', torch.cuda.is_available())"
 echo "=== START $(date) ==="
 
-python scripts/GABOR_SCRIPTS/train_gabor.py \
+python scripts/audio/train_gabor.py \
     --config configs/gabor/gabor_rock_2s_smoke.json \
     --nombre-experimento gabor_rock_2s_smoke
 

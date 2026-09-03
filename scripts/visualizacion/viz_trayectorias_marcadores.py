@@ -2,13 +2,13 @@
 Trayectorias y marcadores de gaussianas.
 
 Uso normal:
-    python scripts/viz_trayectorias_marcadores.py --checkpoint outputs/EXP/checkpoints/checkpoint_final.pt --modo top --n 20 --fondo_dir outputs/EXP/frames_renderizados --gif
+    python scripts/visualizacion/viz_trayectorias_marcadores.py --checkpoint outputs/EXP/checkpoints/checkpoint_final.pt --modo top --n 20 --fondo_dir outputs/EXP/frames_renderizados --gif
 
 Usar gaussianas con mas movimiento segun stats:
-    python scripts/viz_trayectorias_marcadores.py --checkpoint ... --ids_csv outputs/EXP/viz_stats/top_movimiento.csv --n 20 --gif --fondo_dir outputs/EXP/frames_renderizados
+    python scripts/visualizacion/viz_trayectorias_marcadores.py --checkpoint ... --ids_csv outputs/EXP/viz_stats/top_movimiento.csv --n 20 --gif --fondo_dir outputs/EXP/frames_renderizados
 
 Usar ids manuales:
-    python scripts/viz_trayectorias_marcadores.py --checkpoint ... --ids 123 456 789 --gif
+    python scripts/visualizacion/viz_trayectorias_marcadores.py --checkpoint ... --ids 123 456 789 --gif
 """
 
 import argparse

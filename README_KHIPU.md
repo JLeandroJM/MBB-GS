@@ -23,7 +23,7 @@ pip install torch --index-url https://download.pytorch.org/whl/cu128
 # subir el video desde la Mac (en otra terminal)
 # en Khipu, dentro de un job interactivo:
 srun --gres=shard:1 -p debug-gpu --pty /bin/bash
-python scripts/extraer_clips_720p.py
+python scripts/datos/extraer_clips_720p.py
 exit
 # correr cada experimento como job batch
 sbatch jobs/fase1_baseline.sbatch
@@ -372,7 +372,7 @@ cd ~/MBB-GS && source ~/.venv-mbb-gs/bin/activate
 module load cuda/12.8 gnu12/12.4.0
 nvidia-smi                                           # confirma GPU
 python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
-python scripts/extraer_clips_720p.py                 # extrae PNGs a data/clips/test30s_clips/
+python scripts/datos/extraer_clips_720p.py                 # extrae PNGs a data/clips/test30s_clips/
 # smoke test: corre 5 epochs editando temporalmente n_epochs
 python -c "
 import json
@@ -462,7 +462,7 @@ suficiente y más simple.
 ## 10. Archivos relevantes del repo
 
 - [scripts/train.py](scripts/train.py) — entry point del entrenamiento.
-- [scripts/extraer_clips_720p.py](scripts/extraer_clips_720p.py) — extrae PNGs del MP4.
+- [scripts/datos/extraer_clips_720p.py](scripts/datos/extraer_clips_720p.py) — extrae PNGs del MP4.
 - [configs/fase*.json](configs/) — los 14 configs del estudio.
 - [cuda/raster_cuda/setup.py](cuda/raster_cuda/setup.py) — se compila
   automáticamente la primera vez vía PyTorch JIT.

@@ -34,7 +34,7 @@ python setup.py build_ext --inplace
 cd $HOME/MBB-GS
 
 echo "=== START $(date) ==="
-python scripts/GABOR_SCRIPTS/train_gabor.py \
+python scripts/audio/train_gabor.py \
     --config configs/gabor/gabor_rock_8s_N32k_e6000.json \
     --nombre-experimento gabor_rock_8s_N32k_e6000
 echo "=== END $(date) ==="

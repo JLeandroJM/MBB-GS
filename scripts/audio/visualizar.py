@@ -10,8 +10,8 @@ Genera en la carpeta del experimento:
     vis_error.png         <- error absoluto en el tiempo + histograma del error
 
 Uso (en la Mac, no necesita CUDA):
-    python scripts/GABOR_SCRIPTS/visualizar.py --exp gabor_rock_30s_mono_f4v2_a07_N48k
-    python scripts/GABOR_SCRIPTS/visualizar.py --exp <ruta_carpeta> --zoom-ms 30
+    python scripts/audio/visualizar.py --exp gabor_rock_30s_mono_f4v2_a07_N48k
+    python scripts/audio/visualizar.py --exp <ruta_carpeta> --zoom-ms 30
 """
 import argparse
 import wave

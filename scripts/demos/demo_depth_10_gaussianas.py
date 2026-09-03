@@ -11,7 +11,7 @@ import numpy as np
 #   B) depth_rows   -> mas analitica / depth mas legible
 # ============================================================
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 OUT_DIR = RAIZ / "outputs" / "demo_depth_multi"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 

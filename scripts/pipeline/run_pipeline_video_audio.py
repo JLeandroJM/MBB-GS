@@ -13,7 +13,7 @@ Flujo:
 8) Guarda resumen JSON/TXT.
 
 PowerShell:
-python scripts\run_pipeline_video_audio.py `
+python scripts\pipeline\run_pipeline_video_audio.py `
   --config configs\AV_PIPELINE\thriller_10s_1ep\pipeline.json
 """
 
@@ -29,7 +29,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 SCRIPTS = RAIZ / "scripts"
 PYTHON = Path(sys.executable)
 
@@ -152,7 +152,7 @@ def parse_compare(text):
 
 def compare_frames(baseline, test, out_csv, out_txt):
     text = run([
-        PYTHON, SCRIPTS / "comparar_frames_psnr.py",
+        PYTHON, SCRIPTS / "metricas" / "comparar_frames_psnr.py",
         "--a", baseline, "--b", test, "--out", out_csv,
     ], capture=True, log_path=out_txt)
     return parse_compare(text)
@@ -183,7 +183,7 @@ def render_checkpoint(checkpoint, out_dir, n_frames, fps, device):
     frames = out_dir / "frames"
     out_dir.mkdir(parents=True, exist_ok=True)
     run([
-        PYTHON, SCRIPTS / "regenerar_clip_desde_checkpoint_streaming.py",
+        PYTHON, SCRIPTS / "reconstruccion" / "regenerar_clip_desde_checkpoint_streaming.py",
         "--checkpoint", checkpoint,
         "--salida", frames,
         "--device", device,
@@ -256,7 +256,7 @@ def main():
 
     # 1) Frames
     cmd_extract = [
-        PYTHON, SCRIPTS / "extraer_clips_720p.py",
+        PYTHON, SCRIPTS / "datos" / "extraer_clips_720p.py",
         "--video", mp4,
         "--nombre_clip", clip,
         "--inicio_seg", str(inicio),
@@ -327,7 +327,7 @@ def main():
         raise RuntimeError(f"Baseline incompleto: {count_frames(baseline_frames)}/{n_frames}")
 
     # 6) Entrenar audio
-    run([PYTHON, SCRIPTS / "GABOR_SCRIPTS" / "train_gabor_stereo.py", "--config", runtime_audio])
+    run([PYTHON, SCRIPTS / "audio" / "train_gabor_stereo.py", "--config", runtime_audio])
     audio_dir = RAIZ / "outputs" / "gabor" / audio_exp
     recon_audio = audio_dir / "recon_stereo.wav"
     if not recon_audio.exists():
@@ -336,7 +336,7 @@ def main():
     # 7) Pruning dinámico
     pruning = dict(master.get("pruning", {}))
     run([
-        PYTHON, SCRIPTS / "run_binary_pruning_adaptativo.py",
+        PYTHON, SCRIPTS / "compresion" / "run_binary_pruning_adaptativo.py",
         "--exp", video_dir,
         "--checkpoint", original_ckpt,
         "--baseline_frames", baseline_frames,
@@ -370,7 +370,7 @@ def main():
     safe_metrics = None
     if bool(qcfg.get("generar_uint16_safe", True)):
         run([
-            PYTHON, SCRIPTS / "pack_checkpoint_uint16.py",
+            PYTHON, SCRIPTS / "compresion" / "pack_checkpoint_uint16.py",
             "--in_ckpt", selected_ckpt,
             "--out_pkg", safe_pkg,
             "--other_float", "fp32",
@@ -378,7 +378,7 @@ def main():
             "--omit_zero_depth_high",
         ])
         run([
-            PYTHON, SCRIPTS / "unpack_checkpoint_uint16.py",
+            PYTHON, SCRIPTS / "compresion" / "unpack_checkpoint_uint16.py",
             "--in_pkg", safe_pkg,
             "--out_ckpt", safe_ckpt,
             "--out_float", "fp32",
@@ -399,13 +399,13 @@ def main():
     all_metrics = None
     if bool(qcfg.get("generar_uint16_all", True)):
         run([
-            PYTHON, SCRIPTS / "pack_checkpoint_uint16_all.py",
+            PYTHON, SCRIPTS / "compresion" / "pack_checkpoint_uint16_all.py",
             "--in_ckpt", selected_ckpt,
             "--out_pkg", all_pkg,
             "--omit_zero_depth_high",
         ])
         run([
-            PYTHON, SCRIPTS / "unpack_checkpoint_uint16_all.py",
+            PYTHON, SCRIPTS / "compresion" / "unpack_checkpoint_uint16_all.py",
             "--in_pkg", all_pkg,
             "--out_ckpt", all_ckpt,
         ])

@@ -27,7 +27,7 @@ import numpy as np
 # -----------------------------
 # Configuracion general
 # -----------------------------
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 OUT_DIR = RAIZ / "outputs" / "demo_gaussiana_temporal"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 

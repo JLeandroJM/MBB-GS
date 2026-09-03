@@ -4,7 +4,7 @@ from pathlib import Path
 
 import torch
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 SRC = RAIZ / "src"
 
 if str(SRC) not in sys.path:

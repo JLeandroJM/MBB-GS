@@ -12,7 +12,7 @@ Requiere el paquete instalado (pip install -e .).
 Ejemplos Windows:
 
 # A) Renderizar SOLO las gaussianas estaticas visibles del CSV top
-python scripts/viz_render_subset.py ^
+python scripts/visualizacion/viz_render_subset.py ^
   --checkpoint outputs\EXP\checkpoints\checkpoint_final.pt ^
   --ids_csv outputs\EXP\viz_stats\top_estaticas_visibles.csv ^
   --modo only ^
@@ -20,7 +20,7 @@ python scripts/viz_render_subset.py ^
   --crear_video --fps 30 --fin 120
 
 # B) Renderizar quitando esas gaussianas
-python scripts/viz_render_subset.py ^
+python scripts/visualizacion/viz_render_subset.py ^
   --checkpoint outputs\EXP\checkpoints\checkpoint_final.pt ^
   --ids_csv outputs\EXP\viz_stats\top_estaticas_visibles.csv ^
   --modo exclude ^
@@ -28,7 +28,7 @@ python scripts/viz_render_subset.py ^
   --crear_video --fps 30 --fin 120
 
 # C) Usar gaussian_stats.csv y quitar TODAS las gaussianas casi no-op
-python scripts/viz_render_subset.py ^
+python scripts/visualizacion/viz_render_subset.py ^
   --checkpoint outputs\EXP\checkpoints\checkpoint_final.pt ^
   --stats_csv outputs\EXP\viz_stats\gaussian_stats.csv ^
   --modo exclude_static ^
@@ -57,7 +57,7 @@ import torch
 from torch import nn
 from PIL import Image
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 
 from gs2d_video.io.checkpoints import cargar_modelo_desde_checkpoint, cargar_frame_fondo
 from gs2d_video.render.renderer import render_frame
@@ -152,7 +152,7 @@ def calcular_metricas_simples(img_u8, gt_tensor):
 
 
 def crear_video(frames_dir, salida_mp4, fps):
-    script_video = RAIZ / "scripts" / "frames_a_video.py"
+    script_video = RAIZ / "scripts" / "datos" / "frames_a_video.py"
     cmd = [
         sys.executable,
         str(script_video),

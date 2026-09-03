@@ -11,8 +11,8 @@ Actualiza in-place:
   - <exp>/metricas_por_frame.csv (columna lpips)
 
 Uso:
-    python scripts/lpips_post_hoc.py --exp outputs_khipu/fase1_motion
-    python scripts/lpips_post_hoc.py --exp outputs_khipu/fase1_motion \\
+    python scripts/metricas/lpips_post_hoc.py --exp outputs_khipu/fase1_motion
+    python scripts/metricas/lpips_post_hoc.py --exp outputs_khipu/fase1_motion \\
                                      --renders /ruta/a/frames_renderizados \\
                                      --gt data/clips/video_clips
 
@@ -143,7 +143,7 @@ def main():
                     help="cap manual de frames a procesar (default: lo que diga config_usada.json)")
     args = ap.parse_args()
 
-    raiz = Path(__file__).resolve().parents[1]
+    raiz = Path(__file__).resolve().parents[2]
     exp = Path(args.exp).resolve()
     if not exp.is_dir():
         print(f"ERROR: no existe {exp}", file=sys.stderr)

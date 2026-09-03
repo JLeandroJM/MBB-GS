@@ -18,7 +18,7 @@ Metricas (mismas definiciones que el companero, mas extras):
     bloque "cuantizacion"                   <- fp32 vs fp16mix vs fp16full
 
 Uso:
-    python scripts/GABOR_SCRIPTS/train_gabor_stereo.py \
+    python scripts/audio/train_gabor_stereo.py \
         --config configs/gabor/gabor_rock_30s_stereo_LR_N16k.json
 """
 import argparse

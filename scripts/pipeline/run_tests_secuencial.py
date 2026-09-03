@@ -13,7 +13,7 @@ El script ejecuta las configuraciones tal como estan almacenadas y no modifica
 automaticamente los resultados de una fase a partir de otra.
 
 Uso:
-    python scripts/run_tests_secuencial.py
+    python scripts/pipeline/run_tests_secuencial.py
 
 Por defecto corre la fase activa (ver variable FASE_ACTIVA abajo). El
 nombre del experimento se infiere del stem del archivo de config
@@ -85,7 +85,7 @@ CONTINUAR_SI_FALLA = True
 
 
 def main():
-    raiz = Path(__file__).resolve().parents[1]
+    raiz = Path(__file__).resolve().parents[2]
     script_train = raiz / "scripts" / "train.py"
 
     fase_seleccionada = sys.argv[1] if len(sys.argv) > 1 else FASE_ACTIVA

@@ -234,7 +234,7 @@ def main():
 
     args = parser.parse_args()
 
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     python_exe = Path(sys.executable)
 
     exp = Path(args.exp)

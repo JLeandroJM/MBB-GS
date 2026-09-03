@@ -5,9 +5,9 @@ frames GT exactamente alineados con los frames renderizados por el modelo,
 y poder hacer comparaciones lado a lado.
 
 Uso:
-    python scripts/extraer_frames_originales.py --inicio_frame 150
-    python scripts/extraer_frames_originales.py --inicio_frame 150 --n_frames 600
-    python scripts/extraer_frames_originales.py --inicio_frame 150 --H 720 --W 1280
+    python scripts/datos/extraer_frames_originales.py --inicio_frame 150
+    python scripts/datos/extraer_frames_originales.py --inicio_frame 150 --n_frames 600
+    python scripts/datos/extraer_frames_originales.py --inicio_frame 150 --H 720 --W 1280
 
 Por defecto:
     - source : data/videos/video.mp4
@@ -29,7 +29,7 @@ from pathlib import Path
 import cv2
 
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 RUTA_VIDEO_DEFAULT = RAIZ / "data" / "videos" / "video.mp4"
 RUTA_SALIDA_DEFAULT = RAIZ / "data" / "clips" / "frames_originales"
 

@@ -43,8 +43,8 @@ cd $HOME/MBB-GS
 
 echo "=== START $(date)  config=$CONFIG  exp=$EXP ==="
 if [ -z "$EXP" ]; then
-  python scripts/GABOR_SCRIPTS/train_gabor_stereo.py --config "$CONFIG"
+  python scripts/audio/train_gabor_stereo.py --config "$CONFIG"
 else
-  python scripts/GABOR_SCRIPTS/train_gabor_stereo.py --config "$CONFIG" --nombre-experimento "$EXP"
+  python scripts/audio/train_gabor_stereo.py --config "$CONFIG" --nombre-experimento "$EXP"
 fi
 echo "=== END $(date) ==="

@@ -6,14 +6,14 @@ Puede quitar:
   - Gaussianas casi no-op detectadas desde gaussian_stats.csv.
 
 Ejemplo: quitar top_estaticas_visibles.csv
-python scripts/viz_prune_checkpoint_by_stats.py ^
+python scripts/compresion/viz_prune_checkpoint_by_stats.py ^
   --checkpoint outputs\EXP\checkpoints\checkpoint_final.pt ^
   --ids_csv outputs\EXP\viz_stats\top_estaticas_visibles.csv ^
   --modo remove_ids ^
   --salida outputs\EXP\checkpoints\checkpoint_sin_estaticas_top.pt
 
 Ejemplo: quitar TODAS las no-op por regla
-python scripts/viz_prune_checkpoint_by_stats.py ^
+python scripts/compresion/viz_prune_checkpoint_by_stats.py ^
   --checkpoint outputs\EXP\checkpoints\checkpoint_final.pt ^
   --stats_csv outputs\EXP\viz_stats\gaussian_stats.csv ^
   --modo remove_static ^

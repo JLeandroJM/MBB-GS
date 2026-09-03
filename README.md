@@ -753,13 +753,13 @@ data/
 El script recomendado para extraer un clip es:
 
 ```text
-scripts/extraer_clips_720p.py
+scripts/datos/extraer_clips_720p.py
 ```
 
 Ejemplo:
 
 ```powershell
-python .\scripts\extraer_clips_720p.py `
+python .\scripts\datos\extraer_clips_720p.py `
     --video "D:\Videos\entrada.mp4" `
     --nombre_clip "mi_clip" `
     --inicio_seg 0 `
@@ -1175,13 +1175,13 @@ La idea es evitar que los términos de gran grado crezcan sin control cuando no 
 El script principal para reconstrucción eficiente es:
 
 ```text
-scripts/regenerar_clip_desde_checkpoint_streaming.py
+scripts/reconstruccion/regenerar_clip_desde_checkpoint_streaming.py
 ```
 
 Ejemplo:
 
 ```powershell
-python .\scripts\regenerar_clip_desde_checkpoint_streaming.py `
+python .\scripts\reconstruccion\regenerar_clip_desde_checkpoint_streaming.py `
     --checkpoint ".\outputs\mi_experimento\checkpoints\checkpoint_final.pt" `
     --salida ".\outputs\mi_experimento\recon_streaming" `
     --device cuda `
@@ -1212,7 +1212,7 @@ Opciones importantes:
 La reconstrucción utiliza:
 
 ```text
-scripts/_carga_checkpoint.py
+src/gs2d_video/io/checkpoints.py
 ```
 
 como lógica central para:
@@ -1269,13 +1269,13 @@ Uno de los usos más importantes de la representación temporal es evaluar el mo
 El script es:
 
 ```text
-scripts/regenerar_fps_interpolado.py
+scripts/reconstruccion/regenerar_fps_interpolado.py
 ```
 
 Ejemplo:
 
 ```powershell
-python .\scripts\regenerar_fps_interpolado.py `
+python .\scripts\reconstruccion\regenerar_fps_interpolado.py `
     --checkpoint ".\outputs\mi_experimento\checkpoints\checkpoint_final.pt" `
     --salida ".\outputs\mi_experimento\interpolado_120fps" `
     --fps_origen 30 `
@@ -1336,7 +1336,7 @@ monomial  -> interpolación con monomial
 ## 14.2 Convertir frames interpolados a video
 
 ```powershell
-python .\scripts\frames_a_video.py `
+python .\scripts\datos\frames_a_video.py `
     --frames ".\outputs\mi_experimento\interpolado_120fps" `
     --salida ".\outputs\mi_experimento\interpolado_120fps.mp4" `
     --fps 120
@@ -1390,7 +1390,7 @@ Compara la evolución temporal de la reconstrucción y permite evaluar si el mov
 Para comparar dos reconstrucciones:
 
 ```powershell
-python .\scripts\comparar_frames_psnr.py `
+python .\scripts\metricas\comparar_frames_psnr.py `
     --a ".\ruta\frames_A" `
     --b ".\ruta\frames_B" `
     --out ".\resultado.csv"
@@ -1403,7 +1403,7 @@ Este script es utilizado también por el pipeline de pruning y cuantización.
 Para calcular LPIPS posteriormente sobre resultados ya generados:
 
 ```text
-scripts/lpips_post_hoc.py
+scripts/metricas/lpips_post_hoc.py
 ```
 
 Esto es útil cuando se desea evitar el costo de LPIPS durante una ejecución larga y calcularlo después.
@@ -1417,7 +1417,7 @@ El pruning busca reducir el número de gaussianas después del entrenamiento.
 El flujo principal está implementado en:
 
 ```text
-scripts/run_binary_pruning_adaptativo.py
+scripts/compresion/run_binary_pruning_adaptativo.py
 ```
 
 El nombre del archivo conserva la nomenclatura histórica. El procedimiento actual no debe interpretarse estrictamente como una búsqueda binaria clásica: evalúa porcentajes progresivos y conserva la mejor versión que cumple el criterio de calidad.
@@ -1452,7 +1452,7 @@ comparar contra baseline
 El análisis utiliza información generada por:
 
 ```text
-scripts/viz_gaussian_stats.py
+scripts/visualizacion/viz_gaussian_stats.py
 ```
 
 Entre las estadísticas:
@@ -1508,7 +1508,7 @@ Esto no debe confundirse con eliminar únicamente por opacidad.
 Ejemplo:
 
 ```powershell
-python .\scripts\run_binary_pruning_adaptativo.py `
+python .\scripts\compresion\run_binary_pruning_adaptativo.py `
     --exp ".\outputs\mi_experimento" `
     --checkpoint ".\outputs\mi_experimento\checkpoints\checkpoint_final.pt" `
     --baseline_frames ".\outputs\mi_experimento\frames_renderizados" `
@@ -1594,8 +1594,8 @@ Esta estrategia utiliza los `65536` niveles enteros dentro del rango real de cad
 Scripts:
 
 ```text
-scripts/pack_checkpoint_uint16.py
-scripts/unpack_checkpoint_uint16.py
+scripts/compresion/pack_checkpoint_uint16.py
+scripts/compresion/unpack_checkpoint_uint16.py
 ```
 
 La variante utilizada por el pipeline audiovisual cuantiza principalmente:
@@ -1612,7 +1612,7 @@ mientras conserva otros valores en `float32`.
 Ejemplo:
 
 ```powershell
-python .\scripts\pack_checkpoint_uint16.py `
+python .\scripts\compresion\pack_checkpoint_uint16.py `
     --in_ckpt ".\modelo_pruneado.pt" `
     --out_pkg ".\modelo_uint16_safe.pkg.pt" `
     --other_float fp32 `
@@ -1623,7 +1623,7 @@ python .\scripts\pack_checkpoint_uint16.py `
 Reconstrucción del checkpoint:
 
 ```powershell
-python .\scripts\unpack_checkpoint_uint16.py `
+python .\scripts\compresion\unpack_checkpoint_uint16.py `
     --in_pkg ".\modelo_uint16_safe.pkg.pt" `
     --out_ckpt ".\modelo_uint16_safe_render.pt" `
     --out_float fp32
@@ -1634,14 +1634,14 @@ python .\scripts\unpack_checkpoint_uint16.py `
 Scripts:
 
 ```text
-scripts/pack_checkpoint_uint16_all.py
-scripts/unpack_checkpoint_uint16_all.py
+scripts/compresion/pack_checkpoint_uint16_all.py
+scripts/compresion/unpack_checkpoint_uint16_all.py
 ```
 
 Ejemplo:
 
 ```powershell
-python .\scripts\pack_checkpoint_uint16_all.py `
+python .\scripts\compresion\pack_checkpoint_uint16_all.py `
     --in_ckpt ".\modelo_pruneado.pt" `
     --out_pkg ".\modelo_uint16_all.pkg.pt" `
     --omit_zero_depth_high
@@ -1650,7 +1650,7 @@ python .\scripts\pack_checkpoint_uint16_all.py `
 Reconstrucción:
 
 ```powershell
-python .\scripts\unpack_checkpoint_uint16_all.py `
+python .\scripts\compresion\unpack_checkpoint_uint16_all.py `
     --in_pkg ".\modelo_uint16_all.pkg.pt" `
     --out_ckpt ".\modelo_uint16_all_render.pt"
 ```
@@ -1703,7 +1703,7 @@ La ruta principal es:
 
 ```text
 src/gs2d_gabor/
-scripts/GABOR_SCRIPTS/
+scripts/audio/
 cuda/gabor_audio_cuda/
 ```
 
@@ -1798,7 +1798,7 @@ Para audio largo y poblaciones grandes de átomos, CUDA es la ruta práctica.
 El entrenamiento estéreo se encuentra en:
 
 ```text
-scripts/GABOR_SCRIPTS/train_gabor_stereo.py
+scripts/audio/train_gabor_stereo.py
 ```
 
 Hay dos dominios soportados.
@@ -1911,7 +1911,7 @@ Ejemplo:
 ## 19.5 Entrenamiento mono
 
 ```powershell
-python .\scripts\GABOR_SCRIPTS\train_gabor.py `
+python .\scripts\audio\train_gabor.py `
     --config ".\configs\gabor\gabor_rock_2s_smoke.json"
 ```
 
@@ -1934,7 +1934,7 @@ outputs/gabor/<experimento>/
 ## 19.6 Entrenamiento estéreo
 
 ```powershell
-python .\scripts\GABOR_SCRIPTS\train_gabor_stereo.py `
+python .\scripts\audio\train_gabor_stereo.py `
     --config ".\configs\gabor\gabor_rock_31_40_stereo_MS_160k_6000ep.json"
 ```
 
@@ -1961,7 +1961,7 @@ SI-SDR Side
 El punto de entrada integrado es:
 
 ```text
-scripts/run_pipeline_video_audio.py
+scripts/pipeline/run_pipeline_video_audio.py
 ```
 
 Este pipeline ejecuta el flujo de video y audio sobre el mismo segmento temporal de un MP4.
@@ -2065,14 +2065,14 @@ Un ejemplo incluido en el repositorio sigue esta estructura:
 Ejemplo real de estructura existente:
 
 ```powershell
-python .\scripts\run_pipeline_video_audio.py `
+python .\scripts\pipeline\run_pipeline_video_audio.py `
     --config ".\configs\thriller_10s_1ep\pipeline.json"
 ```
 
 o:
 
 ```powershell
-python .\scripts\run_pipeline_video_audio.py `
+python .\scripts\pipeline\run_pipeline_video_audio.py `
     --config ".\configs\rockyourbody_10s_1ep\pipeline.json"
 ```
 
@@ -2221,8 +2221,8 @@ Esta sección distingue herramientas activas de material histórico.
 | Script | Función |
 |---|---|
 | `scripts/train.py` | entrenamiento principal de video |
-| `scripts/_carga_checkpoint.py` | cargador central de checkpoints y base temporal |
-| `scripts/run_tests_secuencial.py` | ejecución de configuraciones de ablación; no es la suite oficial de tests |
+| `src/gs2d_video/io/checkpoints.py` | cargador central de checkpoints y base temporal |
+| `scripts/pipeline/run_tests_secuencial.py` | ejecución de configuraciones de ablación; no es la suite oficial de tests |
 
 ## 22.2 Preparación y video
 
@@ -2290,7 +2290,7 @@ Esta sección distingue herramientas activas de material histórico.
 ## 22.9 Material histórico
 
 ```text
-scripts/OLD_TESTS_PRUNNING/
+scripts/legacy/
 cuda/raster_cuda/tests/
 ```
 
@@ -2983,7 +2983,7 @@ Pop-Location
 Extraer frames:
 
 ```powershell
-python .\scripts\extraer_clips_720p.py `
+python .\scripts\datos\extraer_clips_720p.py `
     --video ".\data\videos\video.mp4" `
     --nombre_clip "mi_clip" `
     --inicio_seg 0 `
@@ -3004,7 +3004,7 @@ python .\scripts\train.py `
 Reconstruir:
 
 ```powershell
-python .\scripts\regenerar_clip_desde_checkpoint_streaming.py `
+python .\scripts\reconstruccion\regenerar_clip_desde_checkpoint_streaming.py `
     --checkpoint ".\outputs\mi_experimento\checkpoints\checkpoint_final.pt" `
     --salida ".\outputs\mi_experimento\recon" `
     --device cuda `
@@ -3015,7 +3015,7 @@ python .\scripts\regenerar_clip_desde_checkpoint_streaming.py `
 Interpolar:
 
 ```powershell
-python .\scripts\regenerar_fps_interpolado.py `
+python .\scripts\reconstruccion\regenerar_fps_interpolado.py `
     --checkpoint ".\outputs\mi_experimento\checkpoints\checkpoint_final.pt" `
     --salida ".\outputs\mi_experimento\fps120" `
     --fps_origen 30 `
@@ -3027,7 +3027,7 @@ python .\scripts\regenerar_fps_interpolado.py `
 Pruning:
 
 ```powershell
-python .\scripts\run_binary_pruning_adaptativo.py `
+python .\scripts\compresion\run_binary_pruning_adaptativo.py `
     --exp ".\outputs\mi_experimento" `
     --checkpoint ".\outputs\mi_experimento\checkpoints\checkpoint_final.pt" `
     --baseline_frames ".\outputs\mi_experimento\frames_renderizados" `
@@ -3044,14 +3044,14 @@ python .\scripts\run_binary_pruning_adaptativo.py `
 Gabor estéreo:
 
 ```powershell
-python .\scripts\GABOR_SCRIPTS\train_gabor_stereo.py `
+python .\scripts\audio\train_gabor_stereo.py `
     --config ".\configs\gabor\gabor_rock_31_40_stereo_MS_160k_6000ep.json"
 ```
 
 Pipeline audiovisual:
 
 ```powershell
-python .\scripts\run_pipeline_video_audio.py `
+python .\scripts\pipeline\run_pipeline_video_audio.py `
     --config ".\configs\thriller_10s_1ep\pipeline.json"
 ```
 

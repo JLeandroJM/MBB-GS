@@ -12,12 +12,12 @@ Genera:
       * primeros n_frames del video original (asumiendo fps original)
       * redimensionado a HxW del experimento
       * mismo codec y calidad que video_reconstruido.mp4 generado por
-        scripts/frames_a_video.py
+        scripts/datos/frames_a_video.py
 
 Uso:
-    python scripts/extraer_video_gt.py --exp outputs_khipu/fase1_motion
-    python scripts/extraer_video_gt.py --exp outputs_khipu/fase2_qframe1 --fps 30
-    python scripts/extraer_video_gt.py --exp outputs_khipu/fase2_qframe8 \\
+    python scripts/datos/extraer_video_gt.py --exp outputs_khipu/fase1_motion
+    python scripts/datos/extraer_video_gt.py --exp outputs_khipu/fase2_qframe1 --fps 30
+    python scripts/datos/extraer_video_gt.py --exp outputs_khipu/fase2_qframe8 \\
                                        --video data/videos/video.mp4 \\
                                        --fps 30
 """
@@ -31,7 +31,7 @@ import imageio.v2 as imageio
 import numpy as np
 
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 RUTA_VIDEO_DEFAULT = RAIZ / "data" / "videos" / "video.mp4"
 
 
