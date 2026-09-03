@@ -49,17 +49,17 @@ cuda/**/build/
 # =========================
 # Resultados pesados
 # =========================
-outputs/
-resultados/
-salidas/
+/outputs/
+/resultados/
+/salidas/
 
 # =========================
 # Datasets / videos / clips
 # =========================
-data/videos/
-data/clips/
-data/raw/
-data/tmp/
+/data/videos/
+/data/clips/
+/data/raw/
+/data/tmp/
 
 *.mp4
 *.avi
@@ -88,6 +88,6 @@ data/tmp/
 Thumbs.db
 .vscode/
 .idea/
-outputs_khipu/
-data/
-resultados_mauro/
+/outputs_khipu/
+/data/
+/resultados_mauro/
