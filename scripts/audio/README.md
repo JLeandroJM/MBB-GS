@@ -1,11 +1,13 @@
 # scripts/audio
 
-Extension de audio con atomos de Gabor. Es un modelo distinto al de video: los
-atomos son estaticos sobre el eje del tiempo, sin polinomios temporales.
+The Gabor atom audio extension. A different model from the video one: atoms are
+static on the time axis, with no temporal polynomials.
 
-| script | para que sirve |
+| Script | What it does |
 | --- | --- |
-| `train_gabor.py` | entrenamiento mono sobre la waveform |
-| `train_gabor_stereo.py` | entrenamiento estereo en dominio L/R o Mid-Side |
-| `visualizar.py` | waveform y espectrogramas, original frente a reconstruido |
-| `test_gradientes_gabor.py` | valida el backward del kernel CUDA contra autograd; corre en CPU |
+| `train_gabor.py` | mono training on the raw waveform |
+| `train_gabor_stereo.py` | stereo training in the L/R or Mid-Side domain |
+| `visualizar.py` | waveform and spectrograms, original against reconstruction |
+| `test_gradientes_gabor.py` | validates the CUDA kernel backward against autograd; runs on CPU |
+
+See the wiki page **Gabor Audio**.

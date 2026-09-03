@@ -1,9 +1,11 @@
 # scripts/reconstruccion
 
-Evaluacion de un modelo ya entrenado a partir de su checkpoint. No entrenan
-nada: cargan los coeficientes y rasterizan.
+Evaluating a trained model from its checkpoint. These train nothing: they load
+coefficients and rasterise.
 
-| script | para que sirve |
+| Script | What it does |
 | --- | --- |
-| `regenerar_clip_desde_checkpoint_streaming.py` | regenera todos los frames sin apilar el clip en GPU; es la ruta a usar en 720p o con muchas gaussianas |
-| `regenerar_fps_interpolado.py` | evalua el modelo en instantes intermedios para subir los FPS (interpolacion temporal y camara lenta) |
+| `regenerar_clip_desde_checkpoint_streaming.py` | regenerates every frame without stacking the clip in GPU memory; the route to use at 720p or with many Gaussians |
+| `regenerar_fps_interpolado.py` | evaluates the model at intermediate instants to raise the frame rate (temporal interpolation and slow motion) |
+
+See the wiki page **Reconstruction and Interpolation**.

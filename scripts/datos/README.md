@@ -1,12 +1,14 @@
 # scripts/datos
 
-Preparacion de los datos de entrada: pasar de un MP4 a la secuencia PNG que
-consume el entrenamiento, y volver de una carpeta de frames a un MP4.
+Input preparation: turning an MP4 into the PNG sequence the trainer consumes,
+and turning a folder of frames back into an MP4.
 
-| script | para que sirve |
+| Script | What it does |
 | --- | --- |
-| `extraer_clips_720p.py` | extrae frames 720p de un video a `data/clips/<clip>/` |
-| `extraer_frames_originales.py` | extrae los frames GT alineados con un experimento, desde un frame inicial dado |
-| `extraer_video_gt.py` | extrae el segmento original como MP4 con la misma duracion y resolucion que un experimento |
-| `extraer.py` | extraccion generica de frames |
-| `frames_a_video.py` | convierte una carpeta `frame_NNNN.png` en un MP4 |
+| `extraer_clips_720p.py` | extracts 720p frames from a video into `data/clips/<clip>/` |
+| `extraer_frames_originales.py` | extracts ground-truth frames aligned with an experiment, from a given start frame |
+| `extraer_video_gt.py` | extracts the original segment as an MP4 matching an experiment in duration and resolution |
+| `extraer.py` | generic frame extraction |
+| `frames_a_video.py` | turns a `frame_NNNN.png` folder into an MP4 |
+
+See the wiki page **Data Preparation**.

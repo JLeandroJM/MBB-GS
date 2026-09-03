@@ -1,15 +1,17 @@
 # scripts/visualizacion
 
-Figuras para inspeccionar que hacen las gaussianas a lo largo del tiempo. Son
-las que producen el material de las presentaciones y del paper.
+Figures for inspecting what the Gaussians do over time. These produce the
+material used in the thesis and the paper.
 
-| script | para que sirve |
+| Script | What it does |
 | --- | --- |
-| `viz_gaussian_stats.py` | estadisticas por gaussiana: cuales se mueven, cambian de color o de opacidad |
-| `viz_trayectorias_marcadores.py` | traza las trayectorias mu_i(t) sobre el frame |
-| `viz_trayectorias_marcadores_rango.py` | idem, restringido a un rango de frames |
-| `viz_elipses_velocidades.py` | dibuja las elipses de las gaussianas y sus velocidades |
-| `viz_atributos_gaussiana_tiempo.py` | curvas de los atributos de una gaussiana frente al tiempo |
-| `viz_rank_gaussianas_rango.py` | ranking de gaussianas dentro de un rango temporal |
-| `viz_render_subset.py` | renderiza usando solo, o excluyendo, ciertas gaussianas |
-| `viz_tira_evolucion.py` | tira de imagenes con la evolucion del entrenamiento |
+| `viz_gaussian_stats.py` | per-Gaussian statistics: which ones move, change colour or change opacity |
+| `viz_trayectorias_marcadores.py` | draws the mu_i(t) trajectories over the frame |
+| `viz_trayectorias_marcadores_rango.py` | the same, restricted to a range of frames |
+| `viz_elipses_velocidades.py` | draws Gaussian ellipses and their velocities |
+| `viz_atributos_gaussiana_tiempo.py` | curves of one Gaussian attributes against time |
+| `viz_rank_gaussianas_rango.py` | ranks Gaussians within a temporal range |
+| `viz_render_subset.py` | renders using only, or excluding, selected Gaussians |
+| `viz_tira_evolucion.py` | filmstrip of how the reconstruction evolves during training |
+
+`viz_gaussian_stats.py` also feeds the adaptive pruning ranking.

@@ -1,9 +1,11 @@
 # scripts/pipeline
 
-Orquestadores que encadenan varias etapas. Llaman por subprocess a los scripts
-de las demas carpetas.
+Orchestrators that chain several stages. They call the scripts in the other
+folders through subprocess.
 
-| script | para que sirve |
+| Script | What it does |
 | --- | --- |
-| `run_pipeline_video_audio.py` | pipeline audiovisual completo: extraccion, entrenamiento de video y audio, pruning, UINT16 y metricas |
-| `run_tests_secuencial.py` | corre en orden la ablacion de perdidas por fases (Experimento 3 de la tesis) |
+| `run_pipeline_video_audio.py` | full audiovisual pipeline: extraction, video and audio training, pruning, UINT16 and metrics |
+| `run_tests_secuencial.py` | runs the loss ablation phases in order |
+
+See the wiki page **Audiovisual Pipeline**.

@@ -1,11 +1,13 @@
 # scripts/compresion
 
-Reduccion del tamano del modelo despues del entrenamiento: poda de gaussianas
-y cuantizacion de los coeficientes a UINT16.
+Reducing model size after training: pruning Gaussians and quantizing
+coefficients to UINT16.
 
-| script | para que sirve |
+| Script | What it does |
 | --- | --- |
-| `run_binary_pruning_adaptativo.py` | busca por porcentaje cuantas gaussianas se pueden podar sin perder PSNR |
-| `viz_prune_checkpoint_by_stats.py` | crea un checkpoint podado a partir de IDs o de estadisticas, sin reentrenar |
-| `pack_checkpoint_uint16.py` / `unpack_checkpoint_uint16.py` | UINT16 SAFE: cuantiza los coeficientes conservando los mas sensibles |
-| `pack_checkpoint_uint16_all.py` / `unpack_checkpoint_uint16_all.py` | UINT16 ALL: cuantiza todos los coeficientes |
+| `run_binary_pruning_adaptativo.py` | searches by percentage for how many Gaussians can be pruned without losing PSNR |
+| `viz_prune_checkpoint_by_stats.py` | builds a pruned checkpoint from IDs or statistics, without retraining |
+| `pack_checkpoint_uint16.py` / `unpack_checkpoint_uint16.py` | UINT16 SAFE: quantizes the bulky high-order coefficients, keeps the rest in float32 |
+| `pack_checkpoint_uint16_all.py` / `unpack_checkpoint_uint16_all.py` | UINT16 ALL: quantizes everything |
+
+See the wiki page **Pruning and Quantization**.

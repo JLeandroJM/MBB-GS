@@ -1,9 +1,11 @@
 # scripts/metricas
 
-Medicion de calidad sobre resultados ya generados.
+Quality measurement over results that already exist.
 
-| script | para que sirve |
+| Script | What it does |
 | --- | --- |
-| `comparar_frames_psnr.py` | compara dos carpetas de frames y reporta PSNR |
-| `lpips_post_hoc.py` | calcula LPIPS de un experimento que quedo con LPIPS en None y actualiza sus metricas |
-| `analizar_interpolacion_fps.py` | analiza la calidad de los frames interpolados frente al video original |
+| `comparar_frames_psnr.py` | compares two folders of frames and reports PSNR |
+| `lpips_post_hoc.py` | computes LPIPS for a run that finished with LPIPS missing, and updates its metric files |
+| `analizar_interpolacion_fps.py` | analyses interpolated frames against the original video |
+
+See the wiki page **Metrics**.
