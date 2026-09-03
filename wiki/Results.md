@@ -22,7 +22,7 @@ Nearly 7 dB, and less than half the variance across frames. This is the
 experiment that justifies making Chebyshev the main path: with degrees around
 100, a monomial basis is too ill-conditioned to fit.
 
-Configs: `configs/video/exp1_bases/`
+Configs: `configs/video/exp1_temporal_basis/`
 
 ## Loss ablation
 
@@ -43,7 +43,7 @@ The `l1_mse` and `combo` variants were part of the study but their runs did not
 finish because of failures in the execution environment, so they are not
 reported.
 
-Configs: `configs/video/exp3_perdida/`
+Configs: `configs/video/exp3_loss/`
 
 ## Aggregation across frames
 
@@ -61,7 +61,7 @@ unbalances the gradients reaching the high-order temporal coefficients, which
 need evidence from many frames. The uniform average is the right choice, and
 `exponente_frame` should be left at 1.
 
-Configs: `configs/video/exp3_agregacion_frames/`
+Configs: `configs/video/exp3_frame_aggregation/`
 
 ## Temporal interpolation
 
@@ -104,7 +104,7 @@ Then adaptive pruning at 20 % and UINT16 quantization:
 
 A 2.8× size reduction at a difference that is effectively invisible.
 
-Configs: `configs/video/escalamiento_epocas/`, `configs/video/final/`
+Configs: `configs/video/scaling_epochs/`, `configs/video/final/`
 
 ## Gabor audio
 

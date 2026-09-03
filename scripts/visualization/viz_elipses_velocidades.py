@@ -2,14 +2,14 @@
 Visualiza elipses y velocidades de gaussianas desde un checkpoint.
 
 Uso:
-    python scripts/visualizacion/viz_elipses_velocidades.py --checkpoint outputs/EXP/checkpoints/checkpoint_final.pt --frame 375 --fondo_dir outputs/EXP/frames_renderizados
+    python scripts/visualization/viz_elipses_velocidades.py --checkpoint outputs/EXP/checkpoints/checkpoint_final.pt --frame 375 --fondo_dir outputs/EXP/frames_renderizados
 
 Mejora:
     Puedes pasar IDs especificos:
-    python scripts/visualizacion/viz_elipses_velocidades.py --checkpoint ... --frame 375 --ids 123 456 789
+    python scripts/visualization/viz_elipses_velocidades.py --checkpoint ... --frame 375 --ids 123 456 789
 
     O leer ids desde un CSV generado por viz_gaussian_stats.py:
-    python scripts/visualizacion/viz_elipses_velocidades.py --checkpoint ... --frame 375 --ids_csv outputs/EXP/viz_stats/top_movimiento.csv --n_max 100
+    python scripts/visualization/viz_elipses_velocidades.py --checkpoint ... --frame 375 --ids_csv outputs/EXP/viz_stats/top_movimiento.csv --n_max 100
 """
 
 import argparse

@@ -9,7 +9,7 @@ Version corregida para entrenamientos grandes:
 - Evita renderizar el clip completo dentro de train.py cuando frames_en_cpu=true
   y evitar_render_completo_en_train=true.
 - Para configs grandes, renderiza luego desde checkpoint con:
-  scripts/reconstruccion/regenerar_clip_desde_checkpoint_streaming.py
+  scripts/reconstruction/regenerar_clip_desde_checkpoint_streaming.py
 """
 
 import argparse

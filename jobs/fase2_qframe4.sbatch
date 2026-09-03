@@ -29,7 +29,7 @@ python -c "import torch; print('torch', torch.__version__, 'cuda_ok', torch.cuda
 echo "=== START $(date) ==="
 
 python scripts/train.py \
-    --config configs/video/exp3_agregacion_frames/fase2_qframe4.json \
+    --config configs/video/exp3_frame_aggregation/fase2_qframe4.json \
     --nombre-experimento fase2_qframe4
 
 echo "=== END $(date) ==="

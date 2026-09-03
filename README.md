@@ -138,7 +138,7 @@ frozen in `requirements-tesis-khipu.txt`.
 Clips are read as PNG sequences from `data/clips/<clip>/`:
 
 ```bash
-python scripts/datos/extraer_clips_720p.py \
+python scripts/data/extraer_clips_720p.py \
     --video mi_video.mp4 --nombre_clip mi_clip \
     --inicio_seg 10 --duracion_seg 20
 ```
@@ -158,7 +158,7 @@ For large models, render from the checkpoint afterwards instead of inside
 training:
 
 ```bash
-python scripts/reconstruccion/regenerar_clip_desde_checkpoint_streaming.py \
+python scripts/reconstruction/regenerar_clip_desde_checkpoint_streaming.py \
     --checkpoint outputs/mi_experimento/checkpoints/checkpoint_final.pt \
     --salida outputs/mi_experimento/frames_renderizados \
     --device cuda
@@ -167,7 +167,7 @@ python scripts/reconstruccion/regenerar_clip_desde_checkpoint_streaming.py \
 Temporal interpolation — the same model evaluated between the original frames:
 
 ```bash
-python scripts/reconstruccion/regenerar_fps_interpolado.py \
+python scripts/reconstruction/regenerar_fps_interpolado.py \
     --checkpoint outputs/mi_experimento/checkpoints/checkpoint_final.pt \
     --salida outputs/mi_experimento/frames_60fps \
     --fps_origen 30 --fps_salida 60 --device cuda
@@ -195,7 +195,7 @@ against PyTorch autograd.
 
 The source videos and audio are commercial recordings and are **not**
 redistributed here. The configurations record which segment each experiment
-used, and `scripts/datos/` regenerates the clips from your own copy.
+used, and `scripts/data/` regenerates the clips from your own copy.
 
 Rendered videos, checkpoints and the full per-experiment outputs are published
 separately: TODO_DRIVE_URL

@@ -4,7 +4,7 @@ Visualiza artefactos evolutivos si tu entrenamiento genero:
     outputs/<exp>/evol_mu/epochXXXX.npz
 
 Uso:
-    python scripts/visualizacion/viz_tira_evolucion.py --exp outputs/EXP --gif
+    python scripts/visualization/viz_tira_evolucion.py --exp outputs/EXP --gif
 
 Este script NO crea evol_mu. Solo lo visualiza si existe.
 """

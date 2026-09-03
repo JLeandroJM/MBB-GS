@@ -29,7 +29,7 @@ python -c "import torch; print('torch', torch.__version__, 'cuda_ok', torch.cuda
 echo "=== START $(date) ==="
 
 python scripts/train.py \
-    --config configs/video/escalamiento_epocas/motion_150k_0800ep.json \
+    --config configs/video/scaling_epochs/motion_150k_0800ep.json \
     --nombre-experimento motion_150k_0800ep
 
 echo "=== END $(date) ==="

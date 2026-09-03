@@ -407,7 +407,7 @@ def render_baseline(
     run([
         python_exe,
         scripts_dir
-        / "reconstruccion"
+        / "reconstruction"
         / "regenerar_clip_desde_checkpoint_streaming.py",
         "--checkpoint",
         checkpoint,
@@ -457,7 +457,7 @@ def render_pruned(
 
     run([
         python_exe,
-        scripts_dir / "visualizacion" / "viz_render_subset.py",
+        scripts_dir / "visualization" / "viz_render_subset.py",
         "--checkpoint",
         checkpoint,
         "--ids_csv",
@@ -487,7 +487,7 @@ def compare_frames(
 ):
     text = run([
         python_exe,
-        scripts_dir / "metricas" / "comparar_frames_psnr.py",
+        scripts_dir / "metrics" / "comparar_frames_psnr.py",
         "--a",
         baseline_frames,
         "--b",
@@ -597,7 +597,7 @@ def main():
     work_dir = exp / "binary_pruning"
     ids_dir = work_dir / "ids"
     tests_dir = work_dir / "tests"
-    metrics_dir = work_dir / "metricas"
+    metrics_dir = work_dir / "metrics"
     checkpoints_dir = work_dir / "checkpoints"
 
     for directory in (
@@ -632,7 +632,7 @@ def main():
     if args.force or not stats_csv.exists():
         run([
             python_exe,
-            scripts_dir / "visualizacion" / "viz_gaussian_stats.py",
+            scripts_dir / "visualization" / "viz_gaussian_stats.py",
             "--checkpoint",
             checkpoint,
             "--chunk",
@@ -916,7 +916,7 @@ def main():
             run([
                 python_exe,
                 scripts_dir
-                / "compresion"
+                / "compression"
                 / "viz_prune_checkpoint_by_stats.py",
                 "--checkpoint",
                 checkpoint,
@@ -942,7 +942,7 @@ def main():
 
             run([
                 python_exe,
-                scripts_dir / "datos" / "frames_a_video.py",
+                scripts_dir / "data" / "frames_a_video.py",
                 "--frames",
                 winner["frames_dir"],
                 "--salida",

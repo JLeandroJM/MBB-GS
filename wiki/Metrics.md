@@ -1,6 +1,6 @@
 # Metrics
 
-Source: `src/gs2d_video/metrics/`, `scripts/metricas/`
+Source: `src/gs2d_video/metrics/`, `scripts/metrics/`
 
 ## What is measured
 
@@ -49,7 +49,7 @@ For a run that finished with LPIPS missing, compute it afterwards on the saved
 frames:
 
 ```bash
-python scripts/metricas/lpips_post_hoc.py --exp outputs/mi_experimento
+python scripts/metrics/lpips_post_hoc.py --exp outputs/mi_experimento
 ```
 
 It reads the rendered frames and the originals named in `config_usada.json`, and
@@ -58,7 +58,7 @@ updates the metric files in place.
 ## Comparing two folders of frames
 
 ```bash
-python scripts/metricas/comparar_frames_psnr.py --a carpeta_a --b carpeta_b
+python scripts/metrics/comparar_frames_psnr.py --a carpeta_a --b carpeta_b
 ```
 
 Used to compare a reduced or quantized model against its baseline

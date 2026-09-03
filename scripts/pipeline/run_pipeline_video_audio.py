@@ -152,7 +152,7 @@ def parse_compare(text):
 
 def compare_frames(baseline, test, out_csv, out_txt):
     text = run([
-        PYTHON, SCRIPTS / "metricas" / "comparar_frames_psnr.py",
+        PYTHON, SCRIPTS / "metrics" / "comparar_frames_psnr.py",
         "--a", baseline, "--b", test, "--out", out_csv,
     ], capture=True, log_path=out_txt)
     return parse_compare(text)
@@ -183,7 +183,7 @@ def render_checkpoint(checkpoint, out_dir, n_frames, fps, device):
     frames = out_dir / "frames"
     out_dir.mkdir(parents=True, exist_ok=True)
     run([
-        PYTHON, SCRIPTS / "reconstruccion" / "regenerar_clip_desde_checkpoint_streaming.py",
+        PYTHON, SCRIPTS / "reconstruction" / "regenerar_clip_desde_checkpoint_streaming.py",
         "--checkpoint", checkpoint,
         "--salida", frames,
         "--device", device,
@@ -256,7 +256,7 @@ def main():
 
     # 1) Frames
     cmd_extract = [
-        PYTHON, SCRIPTS / "datos" / "extraer_clips_720p.py",
+        PYTHON, SCRIPTS / "data" / "extraer_clips_720p.py",
         "--video", mp4,
         "--nombre_clip", clip,
         "--inicio_seg", str(inicio),
@@ -336,7 +336,7 @@ def main():
     # 7) Pruning dinámico
     pruning = dict(master.get("pruning", {}))
     run([
-        PYTHON, SCRIPTS / "compresion" / "run_binary_pruning_adaptativo.py",
+        PYTHON, SCRIPTS / "compression" / "run_binary_pruning_adaptativo.py",
         "--exp", video_dir,
         "--checkpoint", original_ckpt,
         "--baseline_frames", baseline_frames,
@@ -370,7 +370,7 @@ def main():
     safe_metrics = None
     if bool(qcfg.get("generar_uint16_safe", True)):
         run([
-            PYTHON, SCRIPTS / "compresion" / "pack_checkpoint_uint16.py",
+            PYTHON, SCRIPTS / "compression" / "pack_checkpoint_uint16.py",
             "--in_ckpt", selected_ckpt,
             "--out_pkg", safe_pkg,
             "--other_float", "fp32",
@@ -378,7 +378,7 @@ def main():
             "--omit_zero_depth_high",
         ])
         run([
-            PYTHON, SCRIPTS / "compresion" / "unpack_checkpoint_uint16.py",
+            PYTHON, SCRIPTS / "compression" / "unpack_checkpoint_uint16.py",
             "--in_pkg", safe_pkg,
             "--out_ckpt", safe_ckpt,
             "--out_float", "fp32",
@@ -399,13 +399,13 @@ def main():
     all_metrics = None
     if bool(qcfg.get("generar_uint16_all", True)):
         run([
-            PYTHON, SCRIPTS / "compresion" / "pack_checkpoint_uint16_all.py",
+            PYTHON, SCRIPTS / "compression" / "pack_checkpoint_uint16_all.py",
             "--in_ckpt", selected_ckpt,
             "--out_pkg", all_pkg,
             "--omit_zero_depth_high",
         ])
         run([
-            PYTHON, SCRIPTS / "compresion" / "unpack_checkpoint_uint16_all.py",
+            PYTHON, SCRIPTS / "compression" / "unpack_checkpoint_uint16_all.py",
             "--in_pkg", all_pkg,
             "--out_ckpt", all_ckpt,
         ])

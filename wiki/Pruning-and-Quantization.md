@@ -28,7 +28,7 @@ whatever the config resolved; the default is Chebyshev.
 
 ## Adaptive pruning
 
-Source: `scripts/compresion/run_binary_pruning_adaptativo.py`
+Source: `scripts/compression/run_binary_pruning_adaptativo.py`
 
 The serious version, used for the reported reduction results. Despite the file
 name it is not a classical binary search: it evaluates increasing percentages
@@ -49,7 +49,7 @@ try a percentage → render → compare against baseline
 
 ### Statistics
 
-Produced by `scripts/visualizacion/viz_gaussian_stats.py`:
+Produced by `scripts/visualization/viz_gaussian_stats.py`:
 `path_length_px`, `color_path`, `op_mean`, `op_max`, `op_std`, `active_frac`,
 `scale_std`.
 
@@ -80,7 +80,7 @@ representation could also contribute.
 ### Running it
 
 ```bash
-python scripts/compresion/run_binary_pruning_adaptativo.py \
+python scripts/compression/run_binary_pruning_adaptativo.py \
     --exp outputs/mi_experimento \
     --checkpoint outputs/mi_experimento/checkpoints/checkpoint_final.pt \
     --baseline_frames outputs/mi_experimento/frames_renderizados \
@@ -110,20 +110,20 @@ that tensor actually takes.
 
 ### SAFE
 
-`scripts/compresion/pack_checkpoint_uint16.py` and its `unpack` counterpart.
+`scripts/compression/pack_checkpoint_uint16.py` and its `unpack` counterpart.
 Quantizes the bulky high-order coefficients — `mu_high`, `color_high`,
 `opacity_high`, `scale_high` — and leaves the rest in float32. This is the
 variant the audiovisual pipeline uses.
 
 ```bash
-python scripts/compresion/pack_checkpoint_uint16.py \
+python scripts/compression/pack_checkpoint_uint16.py \
     --in_ckpt modelo_pruneado.pt \
     --out_pkg modelo_uint16_safe.pkg.pt \
     --other_float fp32 \
     --quant_tensors mu_high color_high opacity_high scale_high \
     --omit_zero_depth_high
 
-python scripts/compresion/unpack_checkpoint_uint16.py \
+python scripts/compression/unpack_checkpoint_uint16.py \
     --in_pkg modelo_uint16_safe.pkg.pt \
     --out_ckpt modelo_uint16_safe_render.pt \
     --out_float fp32
@@ -134,7 +134,7 @@ python scripts/compresion/unpack_checkpoint_uint16.py \
 `pack_checkpoint_uint16_all.py` quantizes everything:
 
 ```bash
-python scripts/compresion/pack_checkpoint_uint16_all.py \
+python scripts/compression/pack_checkpoint_uint16_all.py \
     --in_ckpt modelo_pruneado.pt \
     --out_pkg modelo_uint16_all.pkg.pt \
     --omit_zero_depth_high

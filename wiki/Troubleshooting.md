@@ -98,7 +98,7 @@ LPIPS downloads AlexNet weights on first use, which fails on a compute node
 without internet. Compute it afterwards from the saved frames:
 
 ```bash
-python scripts/metricas/lpips_post_hoc.py --exp outputs/mi_experimento
+python scripts/metrics/lpips_post_hoc.py --exp outputs/mi_experimento
 ```
 
 ## `ffmpeg` not found

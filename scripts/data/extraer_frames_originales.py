@@ -5,9 +5,9 @@ frames GT exactamente alineados con los frames renderizados por el modelo,
 y poder hacer comparaciones lado a lado.
 
 Uso:
-    python scripts/datos/extraer_frames_originales.py --inicio_frame 150
-    python scripts/datos/extraer_frames_originales.py --inicio_frame 150 --n_frames 600
-    python scripts/datos/extraer_frames_originales.py --inicio_frame 150 --H 720 --W 1280
+    python scripts/data/extraer_frames_originales.py --inicio_frame 150
+    python scripts/data/extraer_frames_originales.py --inicio_frame 150 --n_frames 600
+    python scripts/data/extraer_frames_originales.py --inicio_frame 150 --H 720 --W 1280
 
 Por defecto:
     - source : data/videos/video.mp4

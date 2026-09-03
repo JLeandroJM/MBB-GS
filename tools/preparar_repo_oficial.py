@@ -17,10 +17,10 @@ Que copia:
   - jobs de Slurm: jobs/, con el correo de notificacion sustituido
   - documentacion: README.md, wiki/, LICENSE, CITATION.cff
   - empaquetado: pyproject.toml, requirements*.txt, .gitignore, .gitattributes
-  - resultados livianos extraidos de outputs_khipu/ a resultados/
+  - resultados livianos extraidos de outputs_khipu/ a results/
 
 Que NO copia, y por que:
-  - data/            material con derechos de autor; se regenera con scripts/datos/
+  - data/            material con derechos de autor; se regenera con scripts/data/
   - outputs/, outputs_khipu/, comparacion_slowmo/   demasiado pesado; va al Drive
   - README_KHIPU.md, run.txt, rutas_importantes.txt notas de trabajo internas
   - cuda/raster_cuda/tests/                         benchmarks historicos que no pasan
@@ -127,7 +127,7 @@ def copiar_resultados_livianos(destino: Path) -> tuple[int, int]:
         for nombre in RESULTADOS_LIVIANOS:
             src = exp / nombre
             if src.is_file():
-                dst = destino / "resultados" / exp.name / nombre
+                dst = destino / "results" / exp.name / nombre
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dst)
                 n_archivos += 1
@@ -136,7 +136,7 @@ def copiar_resultados_livianos(destino: Path) -> tuple[int, int]:
         for nombre in RESULTADOS_LOGS:
             src = exp / "logs" / nombre
             if src.is_file():
-                dst = destino / "resultados" / exp.name / nombre
+                dst = destino / "results" / exp.name / nombre
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dst)
                 n_archivos += 1
@@ -146,7 +146,7 @@ def copiar_resultados_livianos(destino: Path) -> tuple[int, int]:
 
 
 def escribir_readme_resultados(destino: Path, n_exp: int) -> None:
-    ruta = destino / "resultados" / "README.md"
+    ruta = destino / "results" / "README.md"
     if not ruta.parent.is_dir():
         return
     ruta.write_text(

@@ -124,7 +124,7 @@ in GPU memory at the end. `usar_metricas_streaming` then renders, saves and
 measures one frame at a time, which is what makes 720p with 100k Gaussians
 feasible on 8 GB of VRAM. In streaming mode the GIF and the compression metrics
 are disabled automatically, since both require the full stack in memory; use
-`scripts/reconstruccion/` afterwards instead.
+`scripts/reconstruction/` afterwards instead.
 
 If you hit out-of-memory, reduce `n_gaussianas_inicial`, the resolution, the
 number of frames, `sub_batch_frames`, or the temporal degrees. Note that keeping

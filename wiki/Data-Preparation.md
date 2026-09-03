@@ -1,6 +1,6 @@
 # Data Preparation
 
-Source: `scripts/datos/`, `src/gs2d_video/io/video.py`
+Source: `scripts/data/`, `src/gs2d_video/io/video.py`
 
 ## What the trainer expects
 
@@ -21,7 +21,7 @@ read in sorted order, so the zero padding matters.
 ## Extracting a clip
 
 ```bash
-python scripts/datos/extraer_clips_720p.py \
+python scripts/data/extraer_clips_720p.py \
     --video data/videos/mi_video.mp4 \
     --nombre_clip mi_clip \
     --inicio_seg 10 --duracion_seg 20 \
@@ -39,7 +39,7 @@ FFmpeg, with a cache check so an existing valid extraction is not redone.
 
 Note that this module's automatic path applies a centred square crop to the
 shorter side before scaling. For 720p widescreen work, extract with
-`scripts/datos/extraer_clips_720p.py` instead.
+`scripts/data/extraer_clips_720p.py` instead.
 
 ## Ground truth aligned with an experiment
 
@@ -47,13 +47,13 @@ To compare a reconstruction against the original, the frames have to line up
 exactly — same start frame, same count, same resolution.
 
 ```bash
-python scripts/datos/extraer_frames_originales.py --inicio_frame 150 --n_frames 600
+python scripts/data/extraer_frames_originales.py --inicio_frame 150 --n_frames 600
 ```
 
 For a side-by-side video instead of frames:
 
 ```bash
-python scripts/datos/extraer_video_gt.py --exp outputs/mi_experimento
+python scripts/data/extraer_video_gt.py --exp outputs/mi_experimento
 ```
 
 This one reads `info_clip.json` from the experiment folder to get the frame
@@ -63,7 +63,7 @@ to get right by hand.
 ## Frames back to video
 
 ```bash
-python scripts/datos/frames_a_video.py \
+python scripts/data/frames_a_video.py \
     --frames outputs/mi_experimento/frames_renderizados \
     --salida outputs/mi_experimento/video_reconstruido.mp4 \
     --fps 30

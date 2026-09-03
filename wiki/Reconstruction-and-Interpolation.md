@@ -1,6 +1,6 @@
 # Reconstruction and Interpolation
 
-Source: `scripts/reconstruccion/`, `src/gs2d_video/io/checkpoints.py`
+Source: `scripts/reconstruction/`, `src/gs2d_video/io/checkpoints.py`
 
 ## The central checkpoint loader
 
@@ -24,7 +24,7 @@ for `info_clip.json` next to it in the experiment folder.
 ## Rendering a clip from a checkpoint
 
 ```bash
-python scripts/reconstruccion/regenerar_clip_desde_checkpoint_streaming.py \
+python scripts/reconstruction/regenerar_clip_desde_checkpoint_streaming.py \
     --checkpoint outputs/mi_experimento/checkpoints/checkpoint_final.pt \
     --salida outputs/mi_experimento/frames_renderizados \
     --device cuda
@@ -43,7 +43,7 @@ the difference, `--crear_video --fps 30` to produce an MP4 directly, and
 To turn an existing folder of frames into a video:
 
 ```bash
-python scripts/datos/frames_a_video.py \
+python scripts/data/frames_a_video.py \
     --frames outputs/mi_experimento/frames_renderizados \
     --salida outputs/mi_experimento/video_reconstruido.mp4 --fps 30
 ```
@@ -59,7 +59,7 @@ $\tau$. The **same learned coefficients** are evaluated at new points. No second
 network, no optical flow, no training.
 
 ```bash
-python scripts/reconstruccion/regenerar_fps_interpolado.py \
+python scripts/reconstruction/regenerar_fps_interpolado.py \
     --checkpoint outputs/mi_experimento/checkpoints/checkpoint_final.pt \
     --salida outputs/mi_experimento/frames_60fps \
     --fps_origen 30 --fps_salida 60 --device cuda
@@ -72,7 +72,7 @@ evaluating the learned polynomials at new points.
 Analysing the result against the true intermediate frames:
 
 ```bash
-python scripts/metricas/analizar_interpolacion_fps.py ...
+python scripts/metrics/analizar_interpolacion_fps.py ...
 ```
 
 ### What to expect
@@ -95,7 +95,7 @@ To extract the matching ground-truth segment as a video with the same duration
 and resolution as an experiment:
 
 ```bash
-python scripts/datos/extraer_video_gt.py --exp outputs/mi_experimento
+python scripts/data/extraer_video_gt.py --exp outputs/mi_experimento
 ```
 
 It reads `info_clip.json` to get the frame count and resolution, so the two

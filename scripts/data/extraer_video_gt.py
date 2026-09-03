@@ -12,12 +12,12 @@ Genera:
       * primeros n_frames del video original (asumiendo fps original)
       * redimensionado a HxW del experimento
       * mismo codec y calidad que video_reconstruido.mp4 generado por
-        scripts/datos/frames_a_video.py
+        scripts/data/frames_a_video.py
 
 Uso:
-    python scripts/datos/extraer_video_gt.py --exp outputs_khipu/fase1_motion
-    python scripts/datos/extraer_video_gt.py --exp outputs_khipu/fase2_qframe1 --fps 30
-    python scripts/datos/extraer_video_gt.py --exp outputs_khipu/fase2_qframe8 \\
+    python scripts/data/extraer_video_gt.py --exp outputs_khipu/fase1_motion
+    python scripts/data/extraer_video_gt.py --exp outputs_khipu/fase2_qframe1 --fps 30
+    python scripts/data/extraer_video_gt.py --exp outputs_khipu/fase2_qframe8 \\
                                        --video data/videos/video.mp4 \\
                                        --fps 30
 """

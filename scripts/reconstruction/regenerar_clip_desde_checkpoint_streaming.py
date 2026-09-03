@@ -5,7 +5,7 @@ Objetivo:
 - No apila todos los renders en GPU.
 - Guarda cada frame PNG apenas se renderiza.
 - Opcionalmente genera comparaciones original | render | diff.
-- Opcionalmente llama a scripts/datos/frames_a_video.py para crear MP4.
+- Opcionalmente llama a scripts/data/frames_a_video.py para crear MP4.
 """
 
 import argparse
@@ -189,7 +189,7 @@ def regenerar_frames_streaming(
 
     if crear_video:
         ruta_video = salida.parent / "video_reconstruido.mp4"
-        script_video = RAIZ / "scripts" / "datos" / "frames_a_video.py"
+        script_video = RAIZ / "scripts" / "data" / "frames_a_video.py"
         cmd = [
             sys.executable,
             str(script_video),

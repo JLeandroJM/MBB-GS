@@ -73,13 +73,13 @@ elsewhere, through subprocess.
 
 | Stage | Script |
 | --- | --- |
-| frame extraction | `scripts/datos/extraer_clips_720p.py` |
+| frame extraction | `scripts/data/extraer_clips_720p.py` |
 | video training | `scripts/train.py` |
 | audio training | `scripts/audio/train_gabor_stereo.py` |
-| pruning | `scripts/compresion/run_binary_pruning_adaptativo.py` |
-| quantization | `scripts/compresion/pack_checkpoint_uint16*.py` and their unpackers |
-| reconstruction | `scripts/reconstruccion/regenerar_clip_desde_checkpoint_streaming.py` |
-| comparison | `scripts/metricas/comparar_frames_psnr.py` |
+| pruning | `scripts/compression/run_binary_pruning_adaptativo.py` |
+| quantization | `scripts/compression/pack_checkpoint_uint16*.py` and their unpackers |
+| reconstruction | `scripts/reconstruction/regenerar_clip_desde_checkpoint_streaming.py` |
+| comparison | `scripts/metrics/comparar_frames_psnr.py` |
 
 Because it renders frames from checkpoints in later stages, the video
 configuration it drives must keep the rasterised frames rather than discarding

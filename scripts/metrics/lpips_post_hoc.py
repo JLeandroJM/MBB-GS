@@ -11,8 +11,8 @@ Actualiza in-place:
   - <exp>/metricas_por_frame.csv (columna lpips)
 
 Uso:
-    python scripts/metricas/lpips_post_hoc.py --exp outputs_khipu/fase1_motion
-    python scripts/metricas/lpips_post_hoc.py --exp outputs_khipu/fase1_motion \\
+    python scripts/metrics/lpips_post_hoc.py --exp outputs_khipu/fase1_motion
+    python scripts/metrics/lpips_post_hoc.py --exp outputs_khipu/fase1_motion \\
                                      --renders /ruta/a/frames_renderizados \\
                                      --gt data/clips/video_clips
 

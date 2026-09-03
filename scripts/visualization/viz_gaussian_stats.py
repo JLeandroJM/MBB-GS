@@ -9,10 +9,10 @@ Objetivo:
       - son visibles pero casi estaticas
 
 Uso Windows, desde la raiz del repo:
-    python scripts/visualizacion/viz_gaussian_stats.py --checkpoint outputs/EXP/checkpoints/checkpoint_final.pt
+    python scripts/visualization/viz_gaussian_stats.py --checkpoint outputs/EXP/checkpoints/checkpoint_final.pt
 
 Opcional para ahorrar RAM/tiempo:
-    python scripts/visualizacion/viz_gaussian_stats.py --checkpoint outputs/EXP/checkpoints/checkpoint_final.pt --chunk 2048 --sample_every 2
+    python scripts/visualization/viz_gaussian_stats.py --checkpoint outputs/EXP/checkpoints/checkpoint_final.pt --chunk 2048 --sample_every 2
 
 Salidas:
     <exp>/viz_stats/gaussian_stats.csv
