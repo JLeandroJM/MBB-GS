@@ -1,11 +1,11 @@
-﻿import argparse
+import argparse
 import csv
 from pathlib import Path
 
 import numpy as np
 import torch
 
-from _carga_checkpoint import cargar_modelo_desde_checkpoint
+from gs2d_video.io.checkpoints import cargar_modelo_desde_checkpoint
 
 
 @torch.no_grad()

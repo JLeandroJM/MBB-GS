@@ -1,4 +1,4 @@
-﻿import argparse
+import argparse
 import csv
 from pathlib import Path
 
@@ -9,7 +9,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 
-from _carga_checkpoint import cargar_modelo_desde_checkpoint, cargar_fondo_desde_dir_o_gt
+from gs2d_video.io.checkpoints import cargar_modelo_desde_checkpoint, cargar_fondo_desde_dir_o_gt
 
 
 @torch.no_grad()

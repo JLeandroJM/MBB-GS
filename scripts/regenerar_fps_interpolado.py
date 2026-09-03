@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-from _carga_checkpoint import (
+from gs2d_video.io.checkpoints import (
     cargar_modelo_desde_checkpoint,
     resolver_base_temporal,
 )

@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from _carga_checkpoint import cargar_modelo_desde_checkpoint
+from gs2d_video.io.checkpoints import cargar_modelo_desde_checkpoint
 from gs2d_video.core.bases import (
     construir_matriz_chebyshev,
     construir_matriz_monomial,

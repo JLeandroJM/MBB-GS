@@ -7,7 +7,7 @@ Sirve para:
   3) Renderizar top_movimiento/top_color/top_opacidad.
   4) Probar pruning sin reentrenar.
 
-Requiere que ya tengas scripts/_carga_checkpoint.py instalado.
+Requiere el paquete instalado (pip install -e .).
 
 Ejemplos Windows:
 
@@ -59,7 +59,7 @@ from PIL import Image
 
 RAIZ = Path(__file__).resolve().parents[1]
 
-from _carga_checkpoint import cargar_modelo_desde_checkpoint, cargar_frame_fondo
+from gs2d_video.io.checkpoints import cargar_modelo_desde_checkpoint, cargar_frame_fondo
 from gs2d_video.render.renderer import render_frame
 
 

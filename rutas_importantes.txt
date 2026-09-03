@@ -1,4 +1,4 @@
-﻿configs\fase1_baseline.json
+configs\fase1_baseline.json
 configs\fase1_combo.json
 configs\fase1_combo_agresivo.json
 configs\fase1_edge.json

@@ -1,4 +1,4 @@
-﻿{
+{
   "_comentario": "Audio only Gabor MS para HERO clip 2. Prueba 4000 epochs.",
   "nombre_experimento": "hero_02_0405_0430_audio_gabor_4000ep",
   "audio": "data/audio_pipeline/hero_02_0405_0430_audio_original.wav",

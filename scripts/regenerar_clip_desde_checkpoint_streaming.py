@@ -20,7 +20,7 @@ from PIL import Image
 
 RAIZ = Path(__file__).resolve().parents[1]
 
-from _carga_checkpoint import cargar_modelo_desde_checkpoint
+from gs2d_video.io.checkpoints import cargar_modelo_desde_checkpoint
 from gs2d_video.render.renderer import render_frame
 
 

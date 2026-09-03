@@ -1,15 +1,16 @@
 """
-Helper comun para scripts de visualizacion de gaussianas temporales.
-
-Colocar este archivo en:
-    <repo>/scripts/_carga_checkpoint.py
-
-Funciona en Windows/Linux/Mac. Carga checkpoints generados por train.py:
+Carga centralizada de checkpoints generados por scripts/train.py:
     checkpoint_final.pt
     modelo_pruneado.pt
 
-No rasteriza por defecto. Reconstruye el objeto GaussianasPolinomial2D
-y las matrices de la base temporal almacenada en el checkpoint.
+Reconstruye el objeto GaussianasPolinomial2D y las matrices de la base
+temporal declarada en el checkpoint. No rasteriza.
+
+Es la unica ruta para interpretar un checkpoint: los scripts de
+reconstruccion, interpolacion, pruning y visualizacion la comparten, de modo
+que la metadata (N, H, W, n_frames, grados, base temporal) se lee siempre
+igual. Los checkpoints antiguos sin 'base_temporal' se interpretan como
+Chebyshev.
 """
 
 from pathlib import Path
@@ -23,7 +24,9 @@ from gs2d_video.core.bases import construir_matriz_chebyshev, construir_matriz_m
 from gs2d_video.core.modelo import GaussianasPolinomial2D
 
 
-RAIZ = Path(__file__).resolve().parents[1]
+# src/gs2d_video/io/checkpoints.py -> io -> gs2d_video -> src -> raiz del repo.
+# Se usa para resolver data/clips/<clip> al cargar frames de fondo.
+RAIZ = Path(__file__).resolve().parents[3]
 
 
 def _torch_load_seguro(path, map_location="cpu"):
