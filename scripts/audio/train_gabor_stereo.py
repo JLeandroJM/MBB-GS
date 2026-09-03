@@ -19,7 +19,7 @@ Metricas (mismas definiciones que el companero, mas extras):
 
 Uso:
     python scripts/audio/train_gabor_stereo.py \
-        --config configs/gabor/gabor_rock_30s_stereo_LR_N16k.json
+        --config configs/audio/gabor/gabor_rock_30s_stereo_LR_N48k.json
 """
 import argparse
 import csv

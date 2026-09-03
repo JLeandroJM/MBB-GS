@@ -3,7 +3,7 @@
 #   sbatch --job-name=<exp> jobs/gabor_mono.sbatch <ruta_config.json> <nombre_exp>
 # Ej:
 #   sbatch --job-name=f1_wave jobs/gabor_mono.sbatch \
-#       configs/gabor/gabor_rock_30s_mono_f1_wave.json gabor_rock_30s_mono_f1_wave
+#       configs/audio/gabor/gabor_rock_30s_mono_f1_wave.json gabor_rock_30s_mono_f1_wave
 #SBATCH --job-name=gabor_mono
 #SBATCH --partition=gpu
 #SBATCH --exclude=ag001

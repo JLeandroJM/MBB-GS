@@ -948,7 +948,7 @@ scripts/train.py
 Uso:
 
 ```powershell
-python .\scripts\train.py --config .\configs\ganador_motion_200k_1200ep.json
+python .\scripts\train.py --config .\configs\video\final\ganador_motion_200k_1200ep.json
 ```
 
 También puede modificarse el nombre del experimento cuando el script/config utilizado lo permite.
@@ -1912,7 +1912,7 @@ Ejemplo:
 
 ```powershell
 python .\scripts\audio\train_gabor.py `
-    --config ".\configs\gabor\gabor_rock_2s_smoke.json"
+    --config ".\configs\audio\gabor\gabor_rock_2s_smoke.json"
 ```
 
 Salida típica:
@@ -1935,7 +1935,7 @@ outputs/gabor/<experimento>/
 
 ```powershell
 python .\scripts\audio\train_gabor_stereo.py `
-    --config ".\configs\gabor\gabor_rock_31_40_stereo_MS_160k_6000ep.json"
+    --config ".\configs\audio\gabor\gabor_rock_31_40_stereo_MS_160k_6000ep.json"
 ```
 
 Entre las métricas disponibles:
@@ -2066,14 +2066,14 @@ Ejemplo real de estructura existente:
 
 ```powershell
 python .\scripts\pipeline\run_pipeline_video_audio.py `
-    --config ".\configs\thriller_10s_1ep\pipeline.json"
+    --config ".\configs\audiovisual\rockyourbody_10s_1ep\pipeline.json"
 ```
 
 o:
 
 ```powershell
 python .\scripts\pipeline\run_pipeline_video_audio.py `
-    --config ".\configs\rockyourbody_10s_1ep\pipeline.json"
+    --config ".\configs\audiovisual\rockyourbody_10s_1ep\pipeline.json"
 ```
 
 ## 20.5 Dependencias externas
@@ -2998,7 +2998,7 @@ Entrenar video:
 
 ```powershell
 python .\scripts\train.py `
-    --config ".\configs\ganador_motion_200k_1200ep.json"
+    --config ".\configs\video\final\ganador_motion_200k_1200ep.json"
 ```
 
 Reconstruir:
@@ -3045,14 +3045,14 @@ Gabor estéreo:
 
 ```powershell
 python .\scripts\audio\train_gabor_stereo.py `
-    --config ".\configs\gabor\gabor_rock_31_40_stereo_MS_160k_6000ep.json"
+    --config ".\configs\audio\gabor\gabor_rock_31_40_stereo_MS_160k_6000ep.json"
 ```
 
 Pipeline audiovisual:
 
 ```powershell
 python .\scripts\pipeline\run_pipeline_video_audio.py `
-    --config ".\configs\thriller_10s_1ep\pipeline.json"
+    --config ".\configs\audiovisual\rockyourbody_10s_1ep\pipeline.json"
 ```
 
 Tests:

@@ -14,7 +14,7 @@ Flujo:
 
 PowerShell:
 python scripts\pipeline\run_pipeline_video_audio.py `
-  --config configs\AV_PIPELINE\thriller_10s_1ep\pipeline.json
+  --config configs\audiovisual\rockyourbody_10s_1ep\pipeline.json
 """
 
 from __future__ import annotations

@@ -35,6 +35,6 @@ cd $HOME/MBB-GS
 
 echo "=== START $(date) ==="
 python scripts/audio/train_gabor.py \
-    --config configs/gabor/gabor_rock_8s_N16k_e6000.json \
+    --config configs/audio/gabor/gabor_rock_8s_N16k_e6000.json \
     --nombre-experimento gabor_rock_8s_N16k_e6000
 echo "=== END $(date) ==="

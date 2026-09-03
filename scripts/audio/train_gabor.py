@@ -7,7 +7,7 @@ optimizados por gradiente. Sin STFT, sin fase separada, sin polinomios
 temporales. Reconstruccion directa a waveform.
 
 Uso:
-    python scripts/audio/train_gabor.py --config configs/gabor/gabor_rock_8s_smoke.json
+    python scripts/audio/train_gabor.py --config configs/audio/gabor/gabor_rock_2s_smoke.json
 
 Salida en outputs/gabor/<nombre_experimento>/:
     config_usada.json

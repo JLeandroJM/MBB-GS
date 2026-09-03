@@ -31,40 +31,40 @@ from datetime import datetime
 # ============================================================
 
 FASE_1 = [
-    "configs/fase1_baseline.json",   # L1 + DSSIM (referencia)
-    "configs/fase1_l1_mse.json",     # L1 + MSE + DSSIM
-    "configs/fase1_edge.json",       # L1 + Sobel edge + DSSIM
-    "configs/fase1_temporal.json",   # L1 + |dR - dGT| + DSSIM
-    "configs/fase1_motion.json",     # L1 ponderado por motion del GT + DSSIM
-    "configs/fase1_combo.json",      # motion x hard + DSSIM
+    "configs/video/exp3_perdida/fase1_baseline.json",   # L1 + DSSIM (referencia)
+    "configs/video/exp3_perdida/fase1_l1_mse.json",     # L1 + MSE + DSSIM
+    "configs/video/exp3_perdida/fase1_edge.json",       # L1 + Sobel edge + DSSIM
+    "configs/video/exp3_perdida/fase1_temporal.json",   # L1 + |dR - dGT| + DSSIM
+    "configs/video/exp3_perdida/fase1_motion.json",     # L1 ponderado por motion del GT + DSSIM
+    "configs/video/exp3_perdida/fase1_combo.json",      # motion x hard + DSSIM
 ]
 
 # Fase 2 utiliza los parametros definidos en sus propios configs.
 FASE_2 = [
-    "configs/fase2_qframe1.json",    # exponente_frame=1 (referencia)
-    "configs/fase2_qframe2.json",    # exponente_frame=2
-    "configs/fase2_qframe4.json",    # exponente_frame=4
-    "configs/fase2_qframe8.json",    # exponente_frame=8
-    "configs/fase2_maxframe.json",   # usar_max_frame=true (max puro)
+    "configs/video/exp3_agregacion_frames/fase2_qframe1.json",    # exponente_frame=1 (referencia)
+    "configs/video/exp3_agregacion_frames/fase2_qframe2.json",    # exponente_frame=2
+    "configs/video/exp3_agregacion_frames/fase2_qframe4.json",    # exponente_frame=4
+    "configs/video/exp3_agregacion_frames/fase2_qframe8.json",    # exponente_frame=8
+    "configs/video/exp3_agregacion_frames/fase2_maxframe.json",   # usar_max_frame=true (max puro)
 ]
 
 # Fase 3 utiliza los parametros definidos en sus propios configs.
 FASE_3 = [
-    "configs/fase3_qpixel1.json",    # exponente_pixel=1 (referencia)
-    "configs/fase3_qpixel2.json",    # exponente_pixel=2
-    "configs/fase3_qpixel4.json",    # exponente_pixel=4
+    "configs/video/exp3_agregacion_pixel/fase3_qpixel1.json",    # exponente_pixel=1 (referencia)
+    "configs/video/exp3_agregacion_pixel/fase3_qpixel2.json",    # exponente_pixel=2
+    "configs/video/exp3_agregacion_pixel/fase3_qpixel4.json",    # exponente_pixel=4
 ]
 
 FASE_BASES = [
-    "configs/comparacion_bases/thriller_chebyshev_8k_360ep.json",
-    "configs/comparacion_bases/thriller_monomial_8k_360ep.json",
+    "configs/video/exp1_bases/thriller_chebyshev_8k_360ep.json",
+    "configs/video/exp1_bases/thriller_monomial_8k_360ep.json",
 ]
 
 FASE_CAPACIDAD = [
-    "configs/comparacion_capacidad/thriller_cheby_12k_gbase_300ep.json",
-    "configs/comparacion_capacidad/thriller_cheby_16k_gbase_300ep.json",
-    "configs/comparacion_capacidad/thriller_cheby_8k_g36_300ep.json",
-    "configs/comparacion_capacidad/thriller_cheby_8k_g45_300ep.json",
+    "configs/video/exp2_capacidad/thriller_cheby_12k_gbase_300ep.json",
+    "configs/video/exp2_capacidad/thriller_cheby_16k_gbase_300ep.json",
+    "configs/video/exp2_capacidad/thriller_cheby_8k_g36_300ep.json",
+    "configs/video/exp2_capacidad/thriller_cheby_8k_g45_300ep.json",
 ]
 
 FASES = {

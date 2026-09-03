@@ -203,7 +203,7 @@ module load cuda/12.8 gnu12/12.4.0
 nvidia-smi                                    # ver la GPU que te toco
 python -c "import torch; print(torch.cuda.get_device_name(0))"
 # correr 5 epochs para chequear que entra en VRAM:
-python scripts/train.py --config configs/fase1_baseline.json \
+python scripts/train.py --config configs/video/exp3_perdida/fase1_baseline.json \
        --nombre-experimento smoke_test
 ```
 
@@ -238,7 +238,7 @@ source $HOME/.venv-mbb-gs/bin/activate
 
 nvidia-smi
 echo "=== START $(date) ==="
-python scripts/train.py --config configs/fase1_baseline.json \
+python scripts/train.py --config configs/video/exp3_perdida/fase1_baseline.json \
        --nombre-experimento fase1_baseline
 echo "=== END $(date) ==="
 ```
@@ -376,7 +376,7 @@ python scripts/datos/extraer_clips_720p.py                 # extrae PNGs a data/
 # smoke test: corre 5 epochs editando temporalmente n_epochs
 python -c "
 import json
-c = json.load(open('configs/fase1_baseline.json'))
+c = json.load(open('configs/video/exp3_perdida/fase1_baseline.json'))
 c['n_epochs'] = 5
 json.dump(c, open('configs/_smoke.json','w'), indent=2)
 "

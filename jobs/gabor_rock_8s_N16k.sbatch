@@ -48,7 +48,7 @@ python -c "import torch; print('torch', torch.__version__, 'cuda_ok', torch.cuda
 echo "=== START $(date) ==="
 
 python scripts/audio/train_gabor.py \
-    --config configs/gabor/gabor_rock_8s_N16k.json \
+    --config configs/audio/gabor/gabor_rock_8s_N16k.json \
     --nombre-experimento gabor_rock_8s_N16k
 
 echo "=== END $(date) ==="
