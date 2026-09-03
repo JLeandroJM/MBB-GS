@@ -11,29 +11,8 @@ import time
 import torch
 
 from gs2d_video.core.perdidas import loss_render_frame, loss_smoothness
+from gs2d_video.io.frames import frame_a_device as _frame_a_device
 from gs2d_video.render.renderer import render_frame, loss_frame_cuda
-
-
-# ============================================================
-# Helper: mover solo el frame necesario a GPU
-# ============================================================
-
-def _frame_a_device(frame, device):
-    """
-    Convierte un frame CPU/GPU a float32 en el device indicado.
-
-    Casos soportados:
-    - CPU uint8: pasa a GPU y normaliza a [0, 1].
-    - CPU float32/float16: pasa a GPU como float32.
-    - CUDA float32: lo devuelve tal cual.
-    """
-    if frame.device == device and frame.dtype == torch.float32:
-        return frame
-
-    if frame.dtype == torch.uint8:
-        return frame.to(device=device, non_blocking=True).float().div_(255.0)
-
-    return frame.to(device=device, dtype=torch.float32, non_blocking=True)
 
 
 # ============================================================

@@ -29,6 +29,11 @@ from gs2d_video.core.pruning_post import prunear_post
 
 from gs2d_video.training.trainer import entrenar_batch_full
 from gs2d_video.io.video import extraer_frames_de_video
+from gs2d_video.io.frames import (
+    frame_a_device as frame_a_float_device,
+    frames_a_device as frames_a_float_device,
+    frames_a_uint8_numpy,
+)
 
 from gs2d_video.metrics.calidad import reporte_completo
 from gs2d_video.metrics.compresion import reporte_compresion
@@ -53,57 +58,6 @@ def _fmt_metric(x, nd=4):
     if isinstance(x, float) and np.isinf(x):
         return "inf"
     return f"{x:.{nd}f}"
-
-
-def frame_a_float_device(frame, device):
-    """
-    Convierte un frame CPU/GPU a float32 en el device indicado.
-
-    - CPU uint8 -> CUDA/CPU float32 en [0, 1]
-    - CPU float -> CUDA/CPU float32
-    - CUDA float32 -> igual
-    """
-    if frame.device == device and frame.dtype == torch.float32:
-        return frame
-
-    if frame.dtype == torch.uint8:
-        return frame.to(device=device, non_blocking=True).float().div_(255.0)
-
-    return frame.to(device=device, dtype=torch.float32, non_blocking=True)
-
-
-def frames_a_float_device(frames, device):
-    """
-    Convierte un tensor completo de frames a float32 en device.
-    Usar solo para resoluciones pequenas porque puede ocupar mucha VRAM.
-    """
-    if frames.device == device and frames.dtype == torch.float32:
-        return frames
-
-    if frames.dtype == torch.uint8:
-        return frames.to(device=device, non_blocking=True).float().div_(255.0)
-
-    return frames.to(device=device, dtype=torch.float32, non_blocking=True)
-
-
-def frames_a_uint8_numpy(frames):
-    """
-    Devuelve frames como numpy uint8 con shape [T,H,W,3].
-    Compatible con:
-    - frames CPU uint8
-    - frames CPU/GPU float en [0,1]
-    """
-    if frames.dtype == torch.uint8:
-        return frames.detach().cpu().numpy()
-
-    return (
-        frames.detach()
-        .clamp(0, 1)
-        .mul(255)
-        .to(torch.uint8)
-        .cpu()
-        .numpy()
-    )
 
 
 @torch.no_grad()
@@ -749,6 +703,7 @@ def main():
             modelo,
             umbral=float(config.get("umbral_pruning_post", 0.05)),
             n_samples=int(config.get("pruning_n_samples", 200)),
+            construir_matriz_base=construir_matriz_base,
         )
         print(f"  N: {n_orig} -> {n_final}", flush=True)
     else:
