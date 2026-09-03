@@ -64,6 +64,7 @@ EXCLUIR_RUTAS = {
     "cuda/raster_cuda/tests",
 }
 EXCLUIR_SUFIJOS = {".pyc", ".pyd", ".so", ".o", ".obj", ".lib", ".exp", ".pt", ".pth"}
+EXCLUIR_NOMBRES = {".DS_Store", "Thumbs.db"}
 
 # Archivos livianos por experimento que si van al repositorio.
 RESULTADOS_LIVIANOS = (
@@ -83,6 +84,10 @@ def _excluido(ruta_rel: Path) -> bool:
     if any(p in EXCLUIR_DIRS for p in partes):
         return True
     if ruta_rel.suffix in EXCLUIR_SUFIJOS:
+        return True
+    if ruta_rel.name in EXCLUIR_NOMBRES:
+        return True
+    if any(p.endswith(".egg-info") for p in partes):
         return True
     ruta_txt = ruta_rel.as_posix()
     return any(ruta_txt == e or ruta_txt.startswith(e + "/") for e in EXCLUIR_RUTAS)
