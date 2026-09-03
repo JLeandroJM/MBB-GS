@@ -32,9 +32,6 @@ import numpy as np
 import torch
 
 RAIZ = Path(__file__).resolve().parents[2]
-SRC = RAIZ / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
 
 from gs2d_gabor.core.entrenamiento import entrenar_canal
 from gs2d_gabor.core.perdidas_gabor import (

@@ -1,17 +1,9 @@
 import argparse
-import sys
 from pathlib import Path
 
 import numpy as np
 import torch
 from PIL import Image
-
-
-RAIZ = Path(__file__).resolve().parents[1]
-SRC = RAIZ / "src"
-
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
 
 from _carga_checkpoint import (
     cargar_modelo_desde_checkpoint,

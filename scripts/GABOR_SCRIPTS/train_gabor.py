@@ -32,9 +32,6 @@ import numpy as np
 import torch
 
 RAIZ = Path(__file__).resolve().parents[2]
-SRC = RAIZ / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
 
 from gs2d_gabor.core.modelo_gabor import GaborAudio1D, construir_optimizador_gabor
 from gs2d_gabor.core.perdidas_gabor import (

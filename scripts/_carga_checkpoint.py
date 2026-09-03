@@ -13,21 +13,17 @@ y las matrices de la base temporal almacenada en el checkpoint.
 """
 
 from pathlib import Path
-import sys
 import json
 
 import numpy as np
 import torch
 from PIL import Image
 
-
-RAIZ = Path(__file__).resolve().parents[1]
-SRC = RAIZ / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
 from gs2d_video.core.bases import construir_matriz_chebyshev, construir_matriz_monomial
 from gs2d_video.core.modelo import GaussianasPolinomial2D
+
+
+RAIZ = Path(__file__).resolve().parents[1]
 
 
 def _torch_load_seguro(path, map_location="cpu"):
